@@ -1,0 +1,9 @@
+model Event {
+  id         String   @id @default(uuid())
+  eventType  String
+  path       String
+  projectKey String
+  sessionId  String
+  referrer   String
+  createdAt  DateTime @default(now())
+}
