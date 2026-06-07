@@ -1,4 +1,3 @@
-"use strict";
 const Analytics = (function () {
     let _endPoint = "";
     let _projectKey = "";
@@ -63,3 +62,4 @@ const Analytics = (function () {
         },
     };
 })();
+export {};

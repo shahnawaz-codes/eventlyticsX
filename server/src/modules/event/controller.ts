@@ -1,19 +1,9 @@
 import { Request, Response } from "express";
-import { prisma } from "../../db.js";
+import { trackEventService } from "./service.js";
 
 export const tracking = async (req: Request, res: Response) => {
   try {
-    const { event, projectKey, path, referrer, sessionId } = req.body || {};
-    // Create event entry in the database
-    const newEvent = await prisma.event.create({
-      data: {
-        eventType: event || "pageview",
-        projectKey: projectKey || "default",
-        path: path || "/",
-        referrer: referrer || "",
-        sessionId: sessionId || "session_unknown",
-      },
-    });
+    const newEvent = await trackEventService(req.body || {});
     console.log("✅ Event tracked:", newEvent);
     res.status(200).json({ success: true, event: newEvent });
   } catch (error) {
