@@ -1,5 +1,6 @@
 model Project {
-  id         String @id @default(uuid())
+  id         String  @id @default(uuid())
   name       String
-  projectKey String
+  projectKey String  @unique
+  events     Event[]
 }
