@@ -3,7 +3,7 @@ model Event {
   eventType  String
   path       String
   projectKey String
-  project    Project  @relation(fields: [projectKey], references: [projectKey])
+  project    Project  @relation(fields: [projectKey], references: [public_key])
   sessionId  String
   referrer   String
   createdAt  DateTime @default(now())
