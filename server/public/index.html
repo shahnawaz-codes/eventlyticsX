@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Analytics SDK Test</title>
+    <script src="/analytics.js"></script>
+    <script>
+      Analytics.init("http://localhost:5000/api/track", "PROJECT_KEY_123");
+    </script>
+  </head>
+  <body>
+    <center>
+      <h1 style="font-weight: bold">hello</h1>
+      <button data-track="test-button" style="background: tomato; padding: 20px 30px">haha</button>
+    </center>
+  </body>
+</html>
