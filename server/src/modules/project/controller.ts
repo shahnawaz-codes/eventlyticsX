@@ -13,9 +13,13 @@ export const createProject = async (
         .status(400)
         .json({ success: false, messege: "project name is required" });
     }
+    // create project_____
+    const project = await createProjectService(
+      projectName,
+      req.user?.id as string,
+    );
 
-    const project = await createProjectService(projectName);
-    return res.status(201).json({ projectKey: project.projectKey });
+    return res.status(201).json({ public_key: project.public_key });
   } catch (error) {
     console.error("Error creating project:", error);
     return res
@@ -25,13 +29,11 @@ export const createProject = async (
 };
 
 export const getProjects = async (req: AuthenticatedRequest, res: Response) => {
-  const user = req.user;
-  const result = await getProjectsService(user?.id);
-  res.status(200).json({
-    ...result,
-    user: {
-      ...result.user,
-      email: user?.email,
-    },
-  });
+  try {
+    const user = req.user;
+    const projects = await getProjectsService(user?.id);
+    res.status(200).json({ projects });
+  } catch (error) {
+    console.log("something goes wrong while getting projects", error);
+  }
 };
