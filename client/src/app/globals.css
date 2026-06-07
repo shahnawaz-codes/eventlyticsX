@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "@neondatabase/auth-ui/tailwind";
 
 @theme {
   --color-border: var(--border);
@@ -128,3 +129,25 @@
 ::-webkit-scrollbar-thumb:hover {
   background: oklch(0.7 0.01 264);
 }
+
+/* Fix password toggle eye positioning in Neon Auth UI forms */
+div:has(> input[type="password"]),
+div:has(> input[type="text"]) {
+  position: relative !important;
+}
+
+div:has(> input[type="password"]) button,
+div:has(> input[type="text"]) button {
+  position: absolute !important;
+  right: 0.75rem !important;
+  left: auto !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+

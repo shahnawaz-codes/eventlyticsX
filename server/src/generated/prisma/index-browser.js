@@ -120,6 +120,16 @@ exports.Prisma.TransactionIsolationLevel = makeStrictEnum({
   Serializable: 'Serializable'
 });
 
+exports.Prisma.EventScalarFieldEnum = {
+  id: 'id',
+  eventType: 'eventType',
+  path: 'path',
+  projectKey: 'projectKey',
+  sessionId: 'sessionId',
+  referrer: 'referrer',
+  createdAt: 'createdAt'
+};
+
 exports.Prisma.UserScalarFieldEnum = {
   id: 'id',
   email: 'email',
@@ -144,6 +154,7 @@ exports.Prisma.NullsOrder = {
 
 
 exports.Prisma.ModelName = {
+  Event: 'Event',
   User: 'User'
 };
 

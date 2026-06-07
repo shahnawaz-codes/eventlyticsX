@@ -3,6 +3,8 @@
 import { useState, useEffect, useRef } from "react"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
+import { authClient } from "@/lib/auth/client"
+
 import {
   Activity,
   ArrowRight,
@@ -59,6 +61,10 @@ const REFERRERS = [
 ]
 
 export default function Home() {
+  const session = authClient.useSession();
+  const user = session.data?.user;
+  const isPending = session.isPending;
+
   // Billing cycle state
   const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("yearly")
 
@@ -207,12 +213,33 @@ export default function Home() {
           </nav>
 
           <div className="flex items-center gap-3">
-            <a href="#pricing" className="text-sm font-medium text-zinc-600 transition-colors hover:text-zinc-900 px-3 py-1.5 rounded-lg hover:bg-zinc-50">
-              Log in
-            </a>
-            <a href="#setup" className="inline-flex shrink-0 items-center justify-center rounded-lg border border-transparent bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-all hover:bg-blue-700 select-none">
-              Start Free
-            </a>
+            {isPending ? (
+              <div className="h-8 w-20 animate-pulse bg-zinc-100 rounded-lg" />
+            ) : user ? (
+              <div className="flex items-center gap-3">
+                <span className="text-sm font-medium text-zinc-600">
+                  {user.name || user.email}
+                </span>
+                <button
+                  onClick={async () => {
+                    await authClient.signOut();
+                    window.location.reload();
+                  }}
+                  className="text-sm font-medium text-zinc-650 hover:text-zinc-950 px-3 py-1.5 rounded-lg hover:bg-zinc-50 border border-zinc-150 shadow-sm cursor-pointer select-none bg-white transition-all text-xs"
+                >
+                  Sign Out
+                </button>
+              </div>
+            ) : (
+              <>
+                <a href="/auth/sign-in" className="text-sm font-medium text-zinc-600 transition-colors hover:text-zinc-900 px-3 py-1.5 rounded-lg hover:bg-zinc-50">
+                  Log in
+                </a>
+                <a href="/auth/sign-up" className="inline-flex shrink-0 items-center justify-center rounded-lg border border-transparent bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-all hover:bg-blue-700 select-none">
+                  Start Free
+                </a>
+              </>
+            )}
           </div>
         </div>
       </header>
@@ -244,7 +271,7 @@ export default function Home() {
 
           {/* CTAs */}
           <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
-            <a href="#setup" className="inline-flex items-center justify-center rounded-xl bg-blue-600 px-6 py-3 text-base font-semibold text-white shadow-md shadow-blue-500/10 transition-all hover:bg-blue-700">
+            <a href={user ? "#setup" : "/auth/sign-up"} className="inline-flex items-center justify-center rounded-xl bg-blue-600 px-6 py-3 text-base font-semibold text-white shadow-md shadow-blue-500/10 transition-all hover:bg-blue-700">
               Get Started for Free <ArrowRight className="ml-1.5 h-4.5 w-4.5" />
             </a>
             <a href="#demo" className="inline-flex items-center justify-center rounded-xl border border-zinc-200 bg-white px-6 py-3 text-base font-medium text-zinc-800 transition-all hover:bg-zinc-50">
