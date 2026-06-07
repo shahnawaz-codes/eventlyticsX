@@ -4,3 +4,4 @@ model User {
   name      String?
   createdAt DateTime @default(now())
 }
+

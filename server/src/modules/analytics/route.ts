@@ -1,5 +1,5 @@
 import express from "express";
-import { tracking } from "./analytics.controller";
+import { tracking } from "./controller.js";
 
 const route = express.Router();
 
