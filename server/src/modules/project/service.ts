@@ -112,6 +112,63 @@ export const getProjectAnalyticsService = async (projectKey: string) => {
     .sort((a, b) => b.referrals - a.referrals)
     .slice(0, 8);
 
+  // 7. Daily traffic trend for the last 7 days (Recharts visualization)
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+  sevenDaysAgo.setHours(0, 0, 0, 0);
+
+  const eventsInLast7Days = await prisma.event.findMany({
+    where: {
+      projectKey,
+      createdAt: {
+        gte: sevenDaysAgo,
+      },
+    },
+    select: {
+      createdAt: true,
+      eventType: true,
+      sessionId: true,
+    },
+    orderBy: {
+      createdAt: "asc",
+    },
+  });
+
+  const dailyStatsMap = new Map<string, { date: string; pageviews: number; visitors: Set<string>; totalEvents: number }>();
+
+  // Initialize last 7 days
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const dateStr = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    dailyStatsMap.set(dateStr, {
+      date: dateStr,
+      pageviews: 0,
+      visitors: new Set<string>(),
+      totalEvents: 0,
+    });
+  }
+
+  // Populate stats
+  eventsInLast7Days.forEach((event) => {
+    const eventDateStr = new Date(event.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    if (dailyStatsMap.has(eventDateStr)) {
+      const stats = dailyStatsMap.get(eventDateStr)!;
+      stats.totalEvents++;
+      if (event.eventType === "page-view" || event.eventType === "pageview") {
+        stats.pageviews++;
+      }
+      stats.visitors.add(event.sessionId);
+    }
+  });
+
+  const dailyStats = Array.from(dailyStatsMap.values()).map((stats) => ({
+    date: stats.date,
+    pageviews: stats.pageviews,
+    uniqueVisitors: stats.visitors.size,
+    totalEvents: stats.totalEvents,
+  }));
+
   return {
     totalEvents,
     totalPageviews,
@@ -119,5 +176,6 @@ export const getProjectAnalyticsService = async (projectKey: string) => {
     recentEvents,
     topPages,
     topReferrers,
+    dailyStats,
   };
 };

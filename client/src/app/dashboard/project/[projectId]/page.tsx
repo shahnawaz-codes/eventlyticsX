@@ -9,8 +9,6 @@ import {
   Key,
   Copy,
   Check,
-  Code,
-  Terminal,
   RefreshCw,
   Globe,
   Monitor,
@@ -19,9 +17,27 @@ import {
   Compass,
   ArrowUpRight,
   Sparkles,
-  Link2,
-  Settings
+  Settings,
+  BookOpen,
+  Calendar,
+  Layers,
+  ArrowRight
 } from "lucide-react";
+import {
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  Cell,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend
+} from "recharts";
 
 interface Project {
   id: string;
@@ -39,6 +55,13 @@ interface EventItem {
   createdAt: string;
 }
 
+interface DailyStatItem {
+  date: string;
+  pageviews: number;
+  uniqueVisitors: number;
+  totalEvents: number;
+}
+
 interface AnalyticsData {
   totalEvents: number;
   totalPageviews: number;
@@ -46,6 +69,7 @@ interface AnalyticsData {
   recentEvents: EventItem[];
   topPages: { path: string; views: number }[];
   topReferrers: { referrer: string; referrals: number }[];
+  dailyStats?: DailyStatItem[];
 }
 
 export default function ProjectDetailsPage() {
@@ -62,12 +86,15 @@ export default function ProjectDetailsPage() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
-  // SDK Docs state
-  const [activeTab, setActiveTab] = useState<"html" | "react" | "next">("html");
   const [copiedKey, setCopiedKey] = useState(false);
-  const [copiedCode, setCopiedCode] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   const API_BASE_URL = process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:5000";
+
+  // Prevent SSR hydration issues for Recharts
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -150,37 +177,51 @@ export default function ProjectDetailsPage() {
     setTimeout(() => setCopiedKey(false), 2000);
   };
 
-  const handleCopyCode = (code: string) => {
-    navigator.clipboard.writeText(code);
-    setCopiedCode(true);
-    setTimeout(() => setCopiedCode(false), 2000);
+  // Process data for charts
+  const getDailyTrafficData = () => {
+    if (analytics?.dailyStats && analytics.dailyStats.length > 0) {
+      return analytics.dailyStats;
+    }
+    // Fallback default empty week data
+    return Array.from({ length: 7 }).map((_, idx) => {
+      const d = new Date();
+      d.setDate(d.getDate() - (6 - idx));
+      return {
+        date: d.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+        pageviews: 0,
+        uniqueVisitors: 0,
+        totalEvents: 0
+      };
+    });
   };
 
-  // Generate trend line points
-  const getTrendDataPoints = () => {
-    if (!analytics || !analytics.recentEvents || analytics.recentEvents.length === 0) {
-      return [0, 0, 0, 0, 0, 0, 0];
-    }
+  const getEventDistributionData = () => {
+    if (!analytics || !analytics.recentEvents) return [];
     
-    // Group events by day in the last 7 days
-    const counts = [0, 0, 0, 0, 0, 0, 0];
-    const now = new Date();
-    
+    // We can parse unique eventTypes from recentEvents to build chart slices
+    const counts: Record<string, number> = {};
     analytics.recentEvents.forEach((evt) => {
-      const date = new Date(evt.createdAt);
-      const diffMs = now.getTime() - date.getTime();
-      const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-      if (diffDays >= 0 && diffDays < 7) {
-        counts[6 - diffDays]++;
-      }
+      const type = evt.eventType || "other";
+      counts[type] = (counts[type] || 0) + 1;
     });
 
-    // If all counts are zero, generate small variations just to show a live empty timeline
-    if (counts.every(c => c === 0)) {
-      return [0, 0, 0, 0, 0, 0, 0];
+    // If empty list, put a default
+    if (Object.keys(counts).length === 0) {
+      return [{ name: "No Data", value: 1, color: "#d4d4d8" }];
     }
-    
-    return counts;
+
+    const colorMap: Record<string, string> = {
+      "page-view": "#3b82f6",
+      "pageview": "#3b82f6",
+      "page-click": "#10b981",
+      "page-exit": "#f59e0b"
+    };
+
+    return Object.keys(counts).map((key) => ({
+      name: key === "page-view" || key === "pageview" ? "Page Views" : key === "page-click" ? "Clicks" : key === "page-exit" ? "Exits" : key,
+      value: counts[key],
+      color: colorMap[key] || "#8b5cf6"
+    }));
   };
 
   if (isPending || loading) {
@@ -188,7 +229,7 @@ export default function ProjectDetailsPage() {
       <div className="flex min-h-screen items-center justify-center bg-zinc-50">
         <div className="flex flex-col items-center gap-3">
           <Activity className="h-8 w-8 animate-spin text-blue-600" />
-          <span className="text-sm font-medium text-zinc-500">Loading project data...</span>
+          <span className="text-sm font-medium text-zinc-500">Loading project analytics...</span>
         </div>
       </div>
     );
@@ -214,84 +255,12 @@ export default function ProjectDetailsPage() {
     );
   }
 
-  // SDK Code strings
-  const trackingEndpoint = `${API_BASE_URL}/api/track`;
-  const trackingScriptUrl = `${API_BASE_URL}/analytics.js`;
-
-  const htmlCode = `<!-- 1. Include standard tracking script -->
-<script src="${trackingScriptUrl}"></script>
-
-<!-- 2. Initialize using your public key -->
-<script>
-  Analytics.init("${trackingEndpoint}", "${project.public_key}");
-</script>`;
-
-  const reactCode = `import { useEffect } from "react";
-
-export function useAnalytics() {
-  useEffect(() => {
-    // Dynamically inject script
-    const script = document.createElement("script");
-    script.src = "${trackingScriptUrl}";
-    script.async = true;
-    script.onload = () => {
-      if (window.Analytics) {
-        window.Analytics.init(
-          "${trackingEndpoint}", 
-          "${project.public_key}"
-        );
-      }
-    };
-    document.head.appendChild(script);
-  }, []);
-}`;
-
-  const nextCode = `// Add this layout snippet to your Next.js root layout (app/layout.tsx)
-import Script from "next/script";
-
-export default function RootLayout({ children }) {
-  return (
-    <html>
-      <head>
-        <Script
-          src="${trackingScriptUrl}"
-          strategy="afterInteractive"
-          onLoad={() => {
-            if (window.Analytics) {
-              window.Analytics.init(
-                "${trackingEndpoint}",
-                "${project.public_key}"
-              );
-            }
-          }}
-        />
-      </head>
-      <body>{children}</body>
-    </html>
-  );
-}`;
-
-  const currentCode = activeTab === "html" ? htmlCode : activeTab === "react" ? reactCode : nextCode;
-
-  // Aggregate metrics
   const hasEvents = analytics && analytics.totalEvents > 0;
-  const chartPoints = getTrendDataPoints();
-  const maxVal = Math.max(...chartPoints, 5); // default base to avoid division by 0
-  const chartHeight = 120;
-  const chartWidth = 500;
-  const svgPath = chartPoints
-    .map((val, idx) => {
-      const x = (idx / (chartPoints.length - 1)) * chartWidth;
-      const y = chartHeight - (val / maxVal) * (chartHeight - 20) - 10;
-      return `${idx === 0 ? "M" : "L"} ${x.toFixed(1)} ${y.toFixed(1)}`;
-    })
-    .join(" ");
-  const svgAreaPath = `${svgPath} L ${chartWidth} ${chartHeight} L 0 ${chartHeight} Z`;
+  const eventTypes = getEventDistributionData();
+  const dailyTraffic = getDailyTrafficData();
 
-  // Test curl command for empty state
-  const testCurlCommand = `curl -X POST "${trackingEndpoint}" \\
-  -H "Content-Type: application/json" \\
-  -d '{"event": "page-view", "projectKey": "${project.public_key}", "path": "/test-landing", "referrer": "Google", "sessionId": "sess_test_123"}'`;
+  // COLORS for pie chart slices
+  const PIE_COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#8b5cf6", "#ec4899"];
 
   return (
     <div className="flex min-h-screen flex-col bg-zinc-50/50">
@@ -301,7 +270,7 @@ export default function RootLayout({ children }) {
           <div className="flex items-center gap-3">
             <button
               onClick={() => router.push("/dashboard")}
-              className="flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-150 text-zinc-500 hover:text-zinc-950 hover:bg-zinc-50 transition-colors"
+              className="flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-150 text-zinc-500 hover:text-zinc-950 hover:bg-zinc-50 transition-colors cursor-pointer select-none"
             >
               <ArrowLeft className="h-4 w-4" />
             </button>
@@ -313,35 +282,53 @@ export default function RootLayout({ children }) {
           </div>
 
           <div className="flex items-center gap-3">
+            {/* Direct Link to Centralized Setup Docs */}
+            <button
+              onClick={() => router.push(`/dashboard/docs?project=${project.id}`)}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-700 hover:bg-zinc-50 transition-all cursor-pointer select-none"
+            >
+              <BookOpen className="h-3.5 w-3.5 text-blue-600" />
+              <span>Setup Docs</span>
+            </button>
+
             <button
               onClick={handleRefresh}
               disabled={refreshing}
               className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-150 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-650 hover:text-zinc-950 transition-all select-none cursor-pointer"
             >
               <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin text-blue-600" : ""}`} />
-              <span>{refreshing ? "Refreshing..." : "Refresh Data"}</span>
+              <span>{refreshing ? "Refreshing..." : "Refresh"}</span>
             </button>
           </div>
         </div>
       </header>
 
       {/* Main Container */}
-      <main className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8 flex-1 flex flex-col gap-8">
+      <main className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8 flex-1 flex flex-col gap-6">
         
-        {/* Project Title and Public Key Banner */}
-        <div className="rounded-2xl border border-zinc-200/80 bg-white p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="space-y-1">
+        {/* Project Header Info */}
+        <div className="rounded-2xl border border-zinc-200/85 bg-white p-6 shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-blue-50 border border-blue-100 text-[10px] font-bold text-blue-700 uppercase tracking-wider">
+                <Sparkles className="h-3 w-3" /> Analytics Live
+              </span>
+              <span className="text-zinc-350 text-xs">•</span>
+              <span className="text-xxs font-medium text-zinc-400">UUID: {project.id}</span>
+            </div>
             <h1 className="text-2xl font-extrabold tracking-tight text-zinc-950">{project.name}</h1>
-            <p className="text-xs text-zinc-400">Project UUID: {project.id}</p>
           </div>
 
-          <div className="flex flex-col gap-2 self-start md:self-auto min-w-[280px]">
-            <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Project Public Key</span>
-            <div className="flex items-center justify-between rounded-xl border border-zinc-200 bg-zinc-50 p-2.5">
-              <code className="text-xs text-zinc-850 font-mono select-all truncate max-w-[200px]">{project.public_key}</code>
+          {/* Key Copy Block */}
+          <div className="flex flex-col gap-2 min-w-[280px]">
+            <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-1">
+              <Key className="h-3 w-3 text-zinc-400" /> Public Access Key
+            </span>
+            <div className="flex items-center justify-between rounded-xl border border-zinc-200 bg-zinc-50 p-2">
+              <code className="text-xs text-zinc-700 font-mono select-all truncate max-w-[220px]">{project.public_key}</code>
               <button
                 onClick={handleCopyKey}
-                className="ml-3 p-1.5 text-zinc-450 hover:text-zinc-900 rounded-lg hover:bg-zinc-150 transition-colors select-none cursor-pointer"
+                className="ml-3 p-1.5 text-zinc-400 hover:text-zinc-900 rounded-lg hover:bg-zinc-200/60 transition-colors select-none cursor-pointer"
                 title="Copy Key"
               >
                 {copiedKey ? (
@@ -354,272 +341,399 @@ export default function RootLayout({ children }) {
           </div>
         </div>
 
-        {/* Layout Split */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          
-          {/* LEFT COLUMN: Integration SDK Docs (7 cols) */}
-          <div className="lg:col-span-7 space-y-6">
-            <div className="rounded-2xl border border-zinc-200/80 bg-white p-6 shadow-sm space-y-6">
-              <div className="space-y-1">
-                <h2 className="text-lg font-bold text-zinc-950 flex items-center gap-2">
-                  <Code className="h-5 w-5 text-blue-600" />
-                  SDK Integration Guide
-                </h2>
-                <p className="text-xs text-zinc-500">
-                  Follow these instructions to connect your application and start recording page view and click events.
-                </p>
-              </div>
-
-              {/* Tab headers */}
-              <div className="flex border-b border-zinc-100">
-                {(["html", "react", "next"] as const).map((tab) => (
-                  <button
-                    key={tab}
-                    onClick={() => setActiveTab(tab)}
-                    className={`border-b-2 px-4 py-2 text-xs font-bold transition-all capitalize select-none cursor-pointer ${
-                      activeTab === tab
-                        ? "border-blue-600 text-blue-600"
-                        : "border-transparent text-zinc-400 hover:text-zinc-650"
-                    }`}
-                  >
-                    {tab === "html" ? "HTML Script" : tab === "react" ? "React SDK" : "Next.js"}
-                  </button>
-                ))}
-              </div>
-
-              {/* Code window */}
-              <div className="rounded-xl border border-zinc-200 bg-zinc-950 shadow-md overflow-hidden font-mono text-xs">
-                <div className="flex items-center justify-between bg-zinc-900 px-4 py-2.5 border-b border-zinc-800">
-                  <span className="text-[10px] text-zinc-500 uppercase tracking-wider font-semibold">
-                    {activeTab === "html" ? "index.html" : activeTab === "react" ? "useAnalytics.ts" : "layout.tsx"}
-                  </span>
-                  <button
-                    onClick={() => handleCopyCode(currentCode)}
-                    className="flex items-center gap-1.5 text-zinc-400 hover:text-white transition-colors cursor-pointer select-none"
-                  >
-                    {copiedCode ? (
-                      <>
-                        <Check className="h-3.5 w-3.5 text-emerald-500" />
-                        <span className="text-emerald-500 font-bold text-[10px]">Copied</span>
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="h-3.5 w-3.5" />
-                        <span className="text-[10px]">Copy Code</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-                <div className="p-5 overflow-x-auto text-zinc-300">
-                  <pre className="whitespace-pre">{currentCode}</pre>
-                </div>
-              </div>
+        {/* 1. AGGREGATED METRICS GRID */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="rounded-2xl border border-zinc-200/80 bg-white p-5 shadow-sm space-y-2 flex flex-col justify-between">
+            <span className="text-xxs font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-1">
+              <Eye className="h-3.5 w-3.5 text-zinc-400" />
+              Total Page Views
+            </span>
+            <div className="text-3xl font-extrabold tracking-tight text-zinc-950">
+              {analytics?.totalPageviews || 0}
             </div>
-
-            {/* Test Curl Instructions */}
-            <div className="rounded-2xl border border-zinc-200/80 bg-white p-6 shadow-sm space-y-4">
-              <div className="space-y-1">
-                <h3 className="text-sm font-bold text-zinc-950 flex items-center gap-2">
-                  <Terminal className="h-4 w-4 text-zinc-400" />
-                  Test with terminal
-                </h3>
-                <p className="text-xs text-zinc-500">
-                  Execute this curl command in your terminal to instantly trigger a test pageview event:
-                </p>
-              </div>
-
-              <div className="rounded-xl border border-zinc-150 bg-zinc-50 p-4 font-mono text-[11px] relative group overflow-x-auto">
-                <pre className="text-zinc-750 pr-8">{testCurlCommand}</pre>
-                <button
-                  onClick={() => handleCopyCode(testCurlCommand)}
-                  className="absolute right-3 top-3.5 p-1 text-zinc-400 hover:text-zinc-800 hover:bg-zinc-200 rounded transition-colors select-none cursor-pointer"
-                  title="Copy command"
-                >
-                  <Copy className="h-3.5 w-3.5" />
-                </button>
-              </div>
-            </div>
+            <span className="text-[10px] font-medium text-zinc-400">Total tracked views</span>
           </div>
 
-          {/* RIGHT COLUMN: Real aggregates or Empty State placeholder (5 cols) */}
-          <div className="lg:col-span-5">
-            {!hasEvents ? (
-              // Empty State - Onboarding Placeholder
-              <div className="rounded-2xl border-2 border-dashed border-zinc-200 bg-white p-8 text-center flex flex-col items-center justify-center gap-4 min-h-[380px]">
-                <div className="relative flex h-10 w-10">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-10 w-10 bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600">
-                    <Activity className="h-5 w-5" />
-                  </span>
+          <div className="rounded-2xl border border-zinc-200/80 bg-white p-5 shadow-sm space-y-2 flex flex-col justify-between">
+            <span className="text-xxs font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-1">
+              <Users className="h-3.5 w-3.5 text-zinc-400" />
+              Unique Visitors
+            </span>
+            <div className="text-3xl font-extrabold tracking-tight text-zinc-950">
+              {analytics?.uniqueVisitors || 0}
+            </div>
+            <span className="text-[10px] font-medium text-zinc-400">Unique active session keys</span>
+          </div>
+
+          <div className="rounded-2xl border border-zinc-200/80 bg-white p-5 shadow-sm space-y-2 flex flex-col justify-between">
+            <span className="text-xxs font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-1">
+              <Activity className="h-3.5 w-3.5 text-zinc-400" />
+              Total Telemetry Events
+            </span>
+            <div className="text-3xl font-extrabold tracking-tight text-zinc-950">
+              {analytics?.totalEvents || 0}
+            </div>
+            <span className="text-[10px] font-medium text-zinc-400">Combined events dispatched</span>
+          </div>
+
+          {/* Docs Promotion CTA Card */}
+          <div className="rounded-2xl border border-blue-200/60 bg-blue-50/30 p-5 shadow-sm flex flex-col justify-between group hover:border-blue-300 hover:bg-blue-50/50 transition-all">
+            <span className="text-xxs font-bold text-blue-600 uppercase tracking-wider flex items-center gap-1">
+              <BookOpen className="h-3.5 w-3.5 text-blue-600" />
+              Need Help Tracking?
+            </span>
+            <div className="space-y-1">
+              <p className="text-xs font-bold text-zinc-800">Add tracking to React, HTML, or Next.js</p>
+              <p className="text-[10px] text-zinc-500 leading-normal">Get code snippets instantly with key pre-filled.</p>
+            </div>
+            <button
+              onClick={() => router.push(`/dashboard/docs?project=${project.id}`)}
+              className="inline-flex items-center gap-1 text-[11px] font-bold text-blue-600 hover:text-blue-800 transition-colors pt-2 group-hover:gap-2 select-none cursor-pointer"
+            >
+              <span>View setup docs</span>
+              <ArrowRight className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        </div>
+
+        {/* EMPTY STATE OR FULL CHARTS LAYOUT */}
+        {!hasEvents ? (
+          <div className="rounded-2xl border-2 border-dashed border-zinc-250 bg-white p-12 text-center flex flex-col items-center justify-center gap-4 min-h-[400px]">
+            <div className="relative flex h-12 w-12">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-12 w-12 bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600">
+                <Activity className="h-6 w-6" />
+              </span>
+            </div>
+            <div className="max-w-md space-y-1.5">
+              <h3 className="font-bold text-lg text-zinc-950">Awaiting Telemetry Data</h3>
+              <p className="text-xs text-zinc-500 leading-relaxed">
+                We haven't received any analytical events from this project yet. Please integrate the SDK to connect your web application's page views and button clicks.
+              </p>
+            </div>
+            <button
+              onClick={() => router.push(`/dashboard/docs?project=${project.id}`)}
+              className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 text-xs font-bold transition-all shadow-md select-none cursor-pointer mt-2"
+            >
+              <BookOpen className="h-3.5 w-3.5" /> Start Integration Guide
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            
+            {/* ROW 2: 7-DAY TRAFFIC HISTORY CHART & EVENT DISTRIBUTION */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+              
+              {/* Traffic Trend (8 cols) */}
+              <div className="lg:col-span-8 rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-zinc-100 pb-3">
+                  <div className="space-y-0.5">
+                    <h3 className="text-sm font-bold text-zinc-900 flex items-center gap-1.5">
+                      <Calendar className="h-4 w-4 text-zinc-400" />
+                      Traffic Trend History
+                    </h3>
+                    <p className="text-xxs text-zinc-450">Daily aggregates for pageviews and unique visitors</p>
+                  </div>
+                  <div className="flex items-center gap-4 text-xxs font-semibold">
+                    <span className="flex items-center gap-1.5 text-blue-600">
+                      <span className="h-2 w-2 rounded-full bg-blue-500"></span> Pageviews
+                    </span>
+                    <span className="flex items-center gap-1.5 text-emerald-600">
+                      <span className="h-2 w-2 rounded-full bg-emerald-500"></span> Unique Visitors
+                    </span>
+                  </div>
                 </div>
-                <div className="max-w-sm space-y-1.5">
-                  <h3 className="font-bold text-zinc-900">Awaiting Your First Event</h3>
-                  <p className="text-xs text-zinc-500 leading-normal">
-                    No analytics traffic has been tracked yet. Integrate the script into your code or run the curl command to trigger event stream records.
-                  </p>
-                </div>
-                <div className="inline-flex items-center gap-1.5 rounded-full bg-zinc-50 border border-zinc-200/60 px-3 py-1 text-[10px] font-bold text-zinc-450 uppercase tracking-wider animate-pulse mt-2">
-                  <span>Listening for events...</span>
+
+                <div className="h-72 w-full">
+                  {mounted && (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart data={dailyTraffic} margin={{ top: 10, right: 5, left: -20, bottom: 0 }}>
+                        <defs>
+                          <linearGradient id="pvGrad" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.15} />
+                            <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.0} />
+                          </linearGradient>
+                          <linearGradient id="uvGrad" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#10b981" stopOpacity={0.15} />
+                            <stop offset="95%" stopColor="#10b981" stopOpacity={0.0} />
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e4e4e7" />
+                        <XAxis
+                          dataKey="date"
+                          stroke="#a1a1aa"
+                          fontSize={10}
+                          tickLine={false}
+                          axisLine={false}
+                          dy={10}
+                        />
+                        <YAxis
+                          stroke="#a1a1aa"
+                          fontSize={10}
+                          tickLine={false}
+                          axisLine={false}
+                          allowDecimals={false}
+                        />
+                        <Tooltip
+                          contentStyle={{
+                            backgroundColor: "#18181b",
+                            border: "none",
+                            borderRadius: "10px",
+                            color: "#fff",
+                            fontSize: "11px"
+                          }}
+                        />
+                        <Area
+                          type="monotone"
+                          dataKey="pageviews"
+                          name="Pageviews"
+                          stroke="#3b82f6"
+                          strokeWidth={2.5}
+                          fillOpacity={1}
+                          fill="url(#pvGrad)"
+                        />
+                        <Area
+                          type="monotone"
+                          dataKey="uniqueVisitors"
+                          name="Visitors"
+                          stroke="#10b981"
+                          strokeWidth={2.5}
+                          fillOpacity={1}
+                          fill="url(#uvGrad)"
+                        />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  )}
                 </div>
               </div>
-            ) : (
-              // Full Dashboard Statistics
-              <div className="space-y-6">
-                {/* Metric Overviews Grid */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
-                    <span className="text-xxs font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-1">
-                      <Eye className="h-3.5 w-3.5 text-zinc-400" />
-                      Page Views
-                    </span>
-                    <div className="mt-1.5 text-2xl font-extrabold tracking-tight text-zinc-950">
-                      {analytics?.totalPageviews}
-                    </div>
-                  </div>
 
-                  <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
-                    <span className="text-xxs font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-1">
-                      <Users className="h-3.5 w-3.5 text-zinc-400" />
-                      Unique Visitors
-                    </span>
-                    <div className="mt-1.5 text-2xl font-extrabold tracking-tight text-zinc-950">
-                      {analytics?.uniqueVisitors}
-                    </div>
-                  </div>
-                </div>
-
-                {/* SVG Mini Trend Chart */}
-                <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm space-y-3">
-                  <div className="flex items-center justify-between text-xxs font-bold text-zinc-400 uppercase tracking-wider">
-                    <span>Traffic Volume</span>
-                    <span className="text-blue-600">7-Day Trend</span>
-                  </div>
-                  
-                  <div className="relative h-28 w-full">
-                    <svg
-                      viewBox={`0 0 ${chartWidth} ${chartHeight}`}
-                      className="w-full h-full overflow-visible"
-                      preserveAspectRatio="none"
-                    >
-                      <defs>
-                        <linearGradient id="detailGradient" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#2563eb" stopOpacity="0.15" />
-                          <stop offset="100%" stopColor="#2563eb" stopOpacity="0.0" />
-                        </linearGradient>
-                      </defs>
-
-                      {/* Area Fill */}
-                      <path d={svgAreaPath} fill="url(#detailGradient)" />
-
-                      {/* Line */}
-                      <path
-                        d={svgPath}
-                        fill="none"
-                        stroke="#2563eb"
-                        strokeWidth="2.5"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                  </div>
-                </div>
-
-                {/* Top Visited Pages */}
-                <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm space-y-3">
-                  <h3 className="text-xs font-bold text-zinc-950 flex items-center gap-1.5">
-                    <Globe className="h-4 w-4 text-zinc-400" />
-                    Top Visited Pages
+              {/* Event Type Distribution (4 cols) */}
+              <div className="lg:col-span-4 rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm space-y-4 flex flex-col">
+                <div className="border-b border-zinc-100 pb-3">
+                  <h3 className="text-sm font-bold text-zinc-900 flex items-center gap-1.5">
+                    <Layers className="h-4 w-4 text-zinc-400" />
+                    Event Distribution
                   </h3>
-                  
-                  <div className="space-y-3 pt-1">
-                    {analytics?.topPages.map((page) => (
-                      <div key={page.path} className="space-y-1">
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="font-mono text-zinc-650 truncate max-w-[200px]">{page.path}</span>
-                          <span className="font-bold text-zinc-950">{page.views}</span>
-                        </div>
-                        <div className="h-1 w-full rounded-full bg-zinc-100 overflow-hidden">
-                          <div
-                            className="h-full bg-blue-600 rounded-full"
-                            style={{
-                              width: `${(page.views / (analytics.totalPageviews || 1)) * 100}%`,
-                            }}
-                          />
-                        </div>
-                      </div>
-                    ))}
+                  <p className="text-xxs text-zinc-450">Telemetry events breakdown by classification</p>
+                </div>
+
+                <div className="h-48 w-full relative flex-1 flex items-center justify-center">
+                  {mounted && (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={eventTypes}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={55}
+                          outerRadius={75}
+                          paddingAngle={3}
+                          dataKey="value"
+                        >
+                          {eventTypes.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color || PIE_COLORS[index % PIE_COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <Tooltip
+                          contentStyle={{
+                            backgroundColor: "#18181b",
+                            border: "none",
+                            borderRadius: "10px",
+                            color: "#fff",
+                            fontSize: "10px"
+                          }}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  )}
+                  {/* Central Text inside Donut */}
+                  <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                    <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Total</span>
+                    <span className="text-2xl font-black text-zinc-900">{analytics?.totalEvents}</span>
                   </div>
                 </div>
 
-                {/* Top Referrers */}
-                <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm space-y-3">
-                  <h3 className="text-xs font-bold text-zinc-950 flex items-center gap-1.5">
+                {/* Custom Legend for Event Types */}
+                <div className="grid grid-cols-2 gap-2 pt-2 border-t border-zinc-50">
+                  {eventTypes.map((entry, index) => (
+                    <div key={entry.name} className="flex items-center gap-1.5 text-xxs text-zinc-650 min-w-0">
+                      <span
+                        className="h-2 w-2 rounded-full shrink-0"
+                        style={{ backgroundColor: entry.color || PIE_COLORS[index % PIE_COLORS.length] }}
+                      ></span>
+                      <span className="truncate" title={entry.name}>{entry.name}</span>
+                      <span className="font-bold text-zinc-800">({entry.value})</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+            </div>
+
+            {/* ROW 3: TOP VISITED PAGES & TOP REFERRERS */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              
+              {/* Top Pages (Horizontal BarChart) */}
+              <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm space-y-4">
+                <div className="border-b border-zinc-100 pb-3">
+                  <h3 className="text-sm font-bold text-zinc-900 flex items-center gap-1.5">
+                    <Globe className="h-4 w-4 text-zinc-400" />
+                    Top Pages Visited
+                  </h3>
+                  <p className="text-xxs text-zinc-450">Most active content locations sorted by view count</p>
+                </div>
+
+                <div className="h-64 w-full">
+                  {mounted && analytics && analytics.topPages.length > 0 ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart
+                        layout="vertical"
+                        data={analytics.topPages}
+                        margin={{ top: 0, right: 10, left: 15, bottom: 5 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e4e4e7" />
+                        <XAxis type="number" stroke="#a1a1aa" fontSize={10} tickLine={false} axisLine={false} />
+                        <YAxis
+                          type="category"
+                          dataKey="path"
+                          stroke="#71717a"
+                          fontSize={10}
+                          tickLine={false}
+                          axisLine={false}
+                          width={80}
+                        />
+                        <Tooltip
+                          contentStyle={{
+                            backgroundColor: "#18181b",
+                            border: "none",
+                            borderRadius: "10px",
+                            color: "#fff",
+                            fontSize: "10px"
+                          }}
+                        />
+                        <Bar dataKey="views" fill="#3b82f6" radius={[0, 4, 4, 0]} barSize={12}>
+                          {analytics.topPages.map((_, index) => (
+                            <Cell key={`cell-${index}`} fill={index === 0 ? "#1d4ed8" : "#3b82f6"} />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="flex h-full items-center justify-center text-xxs font-medium text-zinc-400">
+                      No pageviews logged.
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Top Referrers (Vertical BarChart) */}
+              <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm space-y-4">
+                <div className="border-b border-zinc-100 pb-3">
+                  <h3 className="text-sm font-bold text-zinc-900 flex items-center gap-1.5">
                     <Compass className="h-4 w-4 text-zinc-400" />
                     Top Referrers
                   </h3>
-                  
-                  <div className="space-y-3 pt-1">
-                    {analytics?.topReferrers.map((ref) => (
-                      <div key={ref.referrer} className="space-y-1">
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="text-zinc-650 truncate max-w-[200px]">{ref.referrer}</span>
-                          <span className="font-bold text-zinc-950">{ref.referrals}</span>
-                        </div>
-                        <div className="h-1 w-full rounded-full bg-zinc-100 overflow-hidden">
-                          <div
-                            className="h-full bg-indigo-500 rounded-full"
-                            style={{
-                              width: `${(ref.referrals / (analytics.totalEvents || 1)) * 100}%`,
-                            }}
-                          />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                  <p className="text-xxs text-zinc-450">Top acquisition domains directing web traffic</p>
                 </div>
 
-                {/* Recent Event Log */}
-                <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm space-y-3.5">
-                  <h3 className="text-xs font-bold text-zinc-950 flex items-center gap-2">
+                <div className="h-64 w-full">
+                  {mounted && analytics && analytics.topReferrers.length > 0 ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart
+                        data={analytics.topReferrers}
+                        margin={{ top: 10, right: 10, left: -20, bottom: 5 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e4e4e7" />
+                        <XAxis dataKey="referrer" stroke="#71717a" fontSize={10} tickLine={false} axisLine={false} />
+                        <YAxis stroke="#a1a1aa" fontSize={10} tickLine={false} axisLine={false} />
+                        <Tooltip
+                          contentStyle={{
+                            backgroundColor: "#18181b",
+                            border: "none",
+                            borderRadius: "10px",
+                            color: "#fff",
+                            fontSize: "10px"
+                          }}
+                        />
+                        <Bar dataKey="referrals" name="Referrals" fill="#10b981" radius={[4, 4, 0, 0]} barSize={16}>
+                          {analytics.topReferrers.map((_, index) => (
+                            <Cell key={`cell-${index}`} fill={index === 0 ? "#047857" : "#10b981"} />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="flex h-full items-center justify-center text-xxs font-medium text-zinc-400">
+                      No referral logs recorded.
+                    </div>
+                  )}
+                </div>
+              </div>
+
+            </div>
+
+            {/* ROW 4: LIVE VISITOR LOG */}
+            <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm space-y-4">
+              <div className="flex items-center justify-between border-b border-zinc-100 pb-3">
+                <div className="space-y-0.5">
+                  <h3 className="text-sm font-bold text-zinc-950 flex items-center gap-2">
                     <span className="relative flex h-2 w-2">
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                       <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                     </span>
-                    Live Visitor Log
+                    Live Visitor Logs
                   </h3>
-
-                  <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
-                    {analytics?.recentEvents.map((evt) => (
-                      <div
-                        key={evt.id}
-                        className="rounded-xl border border-zinc-100 bg-zinc-50/40 p-2.5 text-xxs flex items-center justify-between gap-4"
-                      >
-                        <div className="space-y-1 min-w-0">
-                          <div className="flex items-center gap-1.5">
-                            <span className="rounded bg-blue-50 px-1.5 py-0.5 text-blue-600 font-bold uppercase tracking-wider text-[9px]">
-                              {evt.eventType}
-                            </span>
-                            <span className="font-mono text-zinc-800 truncate block max-w-[150px]">{evt.path}</span>
-                          </div>
-                          <div className="flex items-center gap-1.5 text-zinc-450">
-                            <span>{evt.referrer || "Direct"}</span>
-                            <span>•</span>
-                            <span className="truncate block max-w-[100px]">{evt.sessionId}</span>
-                          </div>
-                        </div>
-                        <span className="text-zinc-400 shrink-0 font-medium font-mono text-[9px]">
-                          {new Date(evt.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
+                  <p className="text-xxs text-zinc-400">Real-time incoming client events stream</p>
                 </div>
-
+                <div className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700 uppercase tracking-wider animate-pulse">
+                  Listening
+                </div>
               </div>
-            )}
-          </div>
 
-        </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xxs text-zinc-650 border-collapse">
+                  <thead>
+                    <tr className="border-b border-zinc-100 text-zinc-400 uppercase tracking-wider font-bold">
+                      <th className="py-2.5 px-3">Event Type</th>
+                      <th className="py-2.5 px-3">Content Location (Path)</th>
+                      <th className="py-2.5 px-3">Referrer</th>
+                      <th className="py-2.5 px-3">Session ID</th>
+                      <th className="py-2.5 px-3 text-right">Time</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-zinc-50 font-medium">
+                    {analytics?.recentEvents.map((evt) => (
+                      <tr key={evt.id} className="hover:bg-zinc-50/50 transition-colors">
+                        <td className="py-3 px-3">
+                          <span className={`inline-flex px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider border ${
+                            evt.eventType === "page-view" || evt.eventType === "pageview"
+                              ? "bg-blue-50 border-blue-100 text-blue-700"
+                              : evt.eventType === "page-click"
+                              ? "bg-emerald-50 border-emerald-100 text-emerald-700"
+                              : evt.eventType === "page-exit"
+                              ? "bg-amber-50 border-amber-100 text-amber-700"
+                              : "bg-purple-50 border-purple-100 text-purple-700"
+                          }`}>
+                            {evt.eventType}
+                          </span>
+                        </td>
+                        <td className="py-3 px-3 font-mono text-zinc-800">{evt.path}</td>
+                        <td className="py-3 px-3 truncate max-w-[150px]" title={evt.referrer || "Direct"}>
+                          {evt.referrer || "Direct / Bookmark"}
+                        </td>
+                        <td className="py-3 px-3 font-mono text-zinc-400">{evt.sessionId.slice(0, 15)}...</td>
+                        <td className="py-3 px-3 text-right text-zinc-400 font-mono text-[9px]">
+                          {new Date(evt.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+          </div>
+        )}
 
       </main>
     </div>
