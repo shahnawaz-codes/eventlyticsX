@@ -13,7 +13,7 @@ export interface AuthenticatedRequest extends Request {
 export async function requireAuth(
   req: AuthenticatedRequest,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) {
   const authHeader = req.headers.authorization;
   if (!authHeader?.startsWith("Bearer ")) {
@@ -23,9 +23,9 @@ export async function requireAuth(
   const token = authHeader.split(" ")[1];
 
   try {
-
     if (!JWKS) {
-      const JWKS_URL = "https://ep-wild-haze-ap8cqwko.neonauth.c-7.us-east-1.aws.neon.tech/neondb/auth/.well-known/jwks.json";
+      const JWKS_URL =
+        "https://ep-wild-haze-ap8cqwko.neonauth.c-7.us-east-1.aws.neon.tech/neondb/auth/.well-known/jwks.json";
       JWKS = createRemoteJWKSet(new URL(JWKS_URL));
     }
 

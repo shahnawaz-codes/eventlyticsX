@@ -61,5 +61,4 @@ const Analytics = (function () {
             send(eventName, data);
         },
     };
-})();
-export {};
+})();k
