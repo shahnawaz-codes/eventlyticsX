@@ -24,8 +24,7 @@ export async function requireAuth(
 
   try {
     if (!JWKS) {
-      const JWKS_URL =
-        "https://ep-wild-haze-ap8cqwko.neonauth.c-7.us-east-1.aws.neon.tech/neondb/auth/.well-known/jwks.json";
+      const JWKS_URL = process.env.NEON_AUTH_JWKS_URL!;
       JWKS = createRemoteJWKSet(new URL(JWKS_URL));
     }
 

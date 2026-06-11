@@ -24,7 +24,9 @@ export const createProject = async (
       req.user?.id as string,
     );
 
-    return res.status(201).json({ public_key: project.public_key, id: project.id });
+    return res
+      .status(201)
+      .json({ public_key: project.public_key, id: project.id });
   } catch (error) {
     console.error("Error creating project:", error);
     return res
@@ -35,8 +37,7 @@ export const createProject = async (
 
 export const getProjects = async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const user = req.user;
-    const projects = await getProjectsService(user?.id);
+    const projects = await getProjectsService(req.user?.id as string);
     res.status(200).json({ projects });
   } catch (error) {
     console.log("something goes wrong while getting projects", error);
@@ -46,13 +47,18 @@ export const getProjects = async (req: AuthenticatedRequest, res: Response) => {
 
 export const getProjectDetail = async (
   req: AuthenticatedRequest,
-  res: Response
+  res: Response,
 ) => {
   try {
     const { projectId } = req.params;
-    const project = await getProjectByIdService(projectId as string, req.user?.id as string);
+    const project = await getProjectByIdService(
+      projectId as string,
+      req.user?.id as string,
+    );
     if (!project) {
-      return res.status(404).json({ success: false, message: "Project not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Project not found" });
     }
     res.status(200).json({ project });
   } catch (error) {
@@ -63,13 +69,18 @@ export const getProjectDetail = async (
 
 export const getProjectAnalytics = async (
   req: AuthenticatedRequest,
-  res: Response
+  res: Response,
 ) => {
   try {
     const { projectId } = req.params;
-    const project = await getProjectByIdService(projectId as string, req.user?.id as string);
+    const project = await getProjectByIdService(
+      projectId as string,
+      req.user?.id as string,
+    );
     if (!project) {
-      return res.status(404).json({ success: false, message: "Project not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Project not found" });
     }
     const analytics = await getProjectAnalyticsService(project.public_key);
     res.status(200).json({ analytics });
@@ -78,4 +89,3 @@ export const getProjectAnalytics = async (
     res.status(500).json({ success: false, message: "Internal server error" });
   }
 };
-
