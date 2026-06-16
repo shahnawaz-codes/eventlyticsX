@@ -67,6 +67,15 @@ export const getProjectDetail = async (
   }
 };
 
+export const deleteProject = async (
+  req: AuthenticatedRequest,
+  res: Response,
+) => {
+  try {
+    res.json({ message: "successfully deleted" });
+  } catch (error) {}
+};
+
 export const getProjectAnalytics = async (
   req: AuthenticatedRequest,
   res: Response,
