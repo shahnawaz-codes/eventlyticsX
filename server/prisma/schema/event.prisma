@@ -6,5 +6,9 @@ model Event {
   project    Project  @relation(fields: [projectKey], references: [public_key])
   sessionId  String
   referrer   String
+  browser    String
+  os         String
+  device     String
+  country    String
   createdAt  DateTime @default(now())
 }
