@@ -6,13 +6,21 @@
     <title>Analytics SDK Test</title>
     <script src="/analytics.js"></script>
     <script>
-      Analytics.init("http://localhost:5000/api/track", "PROJECT_KEY_123");
+      Analytics.init(
+        "http://localhost:5000/api/track",
+        "ev_x_98a0ea00c73d117bc2ebf5ffb6ea0e68_1780897669113",
+      );
     </script>
   </head>
   <body>
     <center>
       <h1 style="font-weight: bold">hello</h1>
-      <button data-track="test-button" style="background: tomato; padding: 20px 30px">haha</button>
+      <button
+        data-track="test-button"
+        style="background: tomato; padding: 20px 30px"
+      >
+        haha
+      </button>
     </center>
   </body>
 </html>

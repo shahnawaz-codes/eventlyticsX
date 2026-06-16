@@ -217,15 +217,21 @@ export default function Home() {
               <div className="h-8 w-20 animate-pulse bg-zinc-100 rounded-lg" />
             ) : user ? (
               <div className="flex items-center gap-3">
-                <span className="text-sm font-medium text-zinc-600">
+                <span className="text-sm font-medium text-zinc-650">
                   {user.name || user.email}
                 </span>
+                <a
+                  href="/dashboard"
+                  className="inline-flex shrink-0 items-center justify-center rounded-lg border border-transparent bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-all hover:bg-blue-700 select-none cursor-pointer"
+                >
+                  Dashboard
+                </a>
                 <button
                   onClick={async () => {
                     await authClient.signOut();
                     window.location.reload();
                   }}
-                  className="text-sm font-medium text-zinc-650 hover:text-zinc-950 px-3 py-1.5 rounded-lg hover:bg-zinc-50 border border-zinc-150 shadow-sm cursor-pointer select-none bg-white transition-all text-xs"
+                  className="text-xs font-medium text-zinc-650 hover:text-zinc-950 px-3 py-1.5 rounded-lg hover:bg-zinc-50 border border-zinc-150 shadow-sm cursor-pointer select-none bg-white transition-all"
                 >
                   Sign Out
                 </button>
@@ -243,19 +249,19 @@ export default function Home() {
           </div>
         </div>
       </header>
-
+ 
       {/* 2. Hero Section */}
       <section className="relative overflow-hidden pt-20 pb-16 sm:pb-24 lg:pt-28 lg:pb-32 bg-gradient-to-b from-blue-50/30 to-white">
         <div className="absolute top-0 right-1/4 -z-10 h-72 w-72 rounded-full bg-blue-400/10 blur-3xl" />
         <div className="absolute top-1/3 left-1/4 -z-10 h-96 w-96 rounded-full bg-blue-600/5 blur-3xl" />
-
+ 
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
           {/* Announcement Badge */}
           <div className="inline-flex items-center gap-1.5 rounded-full border border-blue-200/60 bg-blue-50/50 px-3 py-1 text-xs font-semibold text-blue-700 shadow-sm animate-fade-in-up">
             <Sparkles className="h-3.5 w-3.5" />
             <span>Introducing EventlyticsX 2.0</span>
           </div>
-
+ 
           {/* Heading */}
           <h1 className="mx-auto mt-6 max-w-4xl text-4xl font-extrabold tracking-tight text-zinc-950 sm:text-5xl md:text-6xl leading-[1.15]">
             Real-time web analytics <br className="hidden sm:inline" />
@@ -263,17 +269,18 @@ export default function Home() {
               without the performance bloat
             </span>
           </h1>
-
+ 
           {/* Subtitle */}
           <p className="mx-auto mt-6 max-w-2xl text-lg text-zinc-600 sm:text-xl leading-relaxed">
             Privacy-first event tracking and web statistics that load in milliseconds. Under 1KB embed script, GDPR/CCPA compliant out-of-the-box, and no cookie banners required.
           </p>
-
+ 
           {/* CTAs */}
           <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
-            <a href={user ? "#setup" : "/auth/sign-up"} className="inline-flex items-center justify-center rounded-xl bg-blue-600 px-6 py-3 text-base font-semibold text-white shadow-md shadow-blue-500/10 transition-all hover:bg-blue-700">
-              Get Started for Free <ArrowRight className="ml-1.5 h-4.5 w-4.5" />
+            <a href={user ? "/dashboard" : "/auth/sign-up"} className="inline-flex items-center justify-center rounded-xl bg-blue-600 px-6 py-3 text-base font-semibold text-white shadow-md shadow-blue-500/10 transition-all hover:bg-blue-700">
+              {user ? "Go to Dashboard" : "Get Started for Free"} <ArrowRight className="ml-1.5 h-4.5 w-4.5" />
             </a>
+
             <a href="#demo" className="inline-flex items-center justify-center rounded-xl border border-zinc-200 bg-white px-6 py-3 text-base font-medium text-zinc-800 transition-all hover:bg-zinc-50">
               Watch Live Demo
             </a>

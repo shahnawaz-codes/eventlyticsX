@@ -3,6 +3,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 import trackRoute from "./modules/event/route.js";
 import projectRoute from "./modules/project/route.js";
+import analyticsRoute from "./modules/analytics/route.js";
 import morgan from "morgan";
 
 dotenv.config();
@@ -24,6 +25,8 @@ if (process.env.NODE_ENV !== "production") app.use(morgan("dev"));
 // Routes
 app.use("/api", trackRoute);
 app.use("/api/projects", projectRoute);
+app.use("/api/analytics", analyticsRoute);
+
 app.get("/health", (req: Request, res: Response) => {
   res.json({ status: "OK", timestamp: new Date() });
 });

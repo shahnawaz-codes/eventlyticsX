@@ -1,6 +1,11 @@
-import { createAuthClient } from "@neondatabase/auth";
-import { BetterAuthReactAdapter } from "@neondatabase/auth/react/adapters";
+import { createInternalNeonAuth } from "@neondatabase/auth";
+import { BetterAuthReactAdapter, BetterAuthReactAdapterInstance } from "@neondatabase/auth/react/adapters";
 
-export const authClient = createAuthClient(process.env.NEXT_PUBLIC_NEON_AUTH_BASE_URL!, {
+const internalAuth = createInternalNeonAuth<BetterAuthReactAdapterInstance>(process.env.NEXT_PUBLIC_NEON_AUTH_BASE_URL!, {
   adapter: BetterAuthReactAdapter(),
 });
+
+export const authClient = internalAuth.adapter;
+export const getJWTToken = internalAuth.getJWTToken;
+
+

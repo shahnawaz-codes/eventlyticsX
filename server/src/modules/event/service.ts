@@ -9,6 +9,7 @@ interface TrackEventInput {
 }
 
 export const trackEventService = async (input: TrackEventInput) => {
+  
   return await prisma.event.create({
     data: {
       eventType: input.event || "pageview",
