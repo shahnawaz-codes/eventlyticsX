@@ -1,9 +1,24 @@
 import { Request, Response } from "express";
 import { trackEventService } from "./service.js";
+import { UAParser } from "ua-parser-js";
 
 export const tracking = async (req: Request, res: Response) => {
   try {
-    const newEvent = await trackEventService(req.body || {});
+    const { event, projectKey, sessionId, path, referrer } = req.body || {};
+    const ua = req.headers["user-agent"];
+    const result = new UAParser(ua).getResult();
+    const payload = {
+      event,
+      projectKey,
+      sessionId,
+      path,
+      referrer,
+      browser: result.browser.name as string,
+      os: result.os.name as string,
+      device: result.device.type || "desktop",
+      country: "india",
+    };
+    const newEvent = await trackEventService(payload);
     console.log("✅ Event tracked:", newEvent);
     res.status(200).json({ success: true, event: newEvent });
   } catch (error) {

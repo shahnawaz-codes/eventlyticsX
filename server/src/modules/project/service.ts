@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { prisma } from "../../db.js";
+import project from "./repository.js";
 
 export const createProjectService = async (
   projectName: string,
@@ -16,25 +17,23 @@ export const createProjectService = async (
   });
 };
 
-export const getProjectsService = async (userId: string | undefined) => {
+export const getProjectsService = async (userId: string) => {
   // Returns project details
-  return await prisma.project.findMany({
-    where: {
-      userId,
-    },
-  });
+  return await project.getProjects(userId);
 };
 
 export const getProjectByIdService = async (
   projectId: string,
   userId: string,
 ) => {
-  return await prisma.project.findFirst({
-    where: {
-      id: projectId,
-      userId,
-    },
-  });
+  return await project.getProject(projectId, userId);
+};
+
+export const deleteProjectService = async (
+  userId: string,
+  projectId: string,
+) => {
+  return await project.delete(projectId, userId);
 };
 
 export const getProjectAnalyticsService = async (projectKey: string) => {
@@ -134,13 +133,24 @@ export const getProjectAnalyticsService = async (projectKey: string) => {
     },
   });
 
-  const dailyStatsMap = new Map<string, { date: string; pageviews: number; visitors: Set<string>; totalEvents: number }>();
+  const dailyStatsMap = new Map<
+    string,
+    {
+      date: string;
+      pageviews: number;
+      visitors: Set<string>;
+      totalEvents: number;
+    }
+  >();
 
   // Initialize last 7 days
   for (let i = 6; i >= 0; i--) {
     const d = new Date();
     d.setDate(d.getDate() - i);
-    const dateStr = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    const dateStr = d.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+    });
     dailyStatsMap.set(dateStr, {
       date: dateStr,
       pageviews: 0,
@@ -151,7 +161,10 @@ export const getProjectAnalyticsService = async (projectKey: string) => {
 
   // Populate stats
   eventsInLast7Days.forEach((event) => {
-    const eventDateStr = new Date(event.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    const eventDateStr = new Date(event.createdAt).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+    });
     if (dailyStatsMap.has(eventDateStr)) {
       const stats = dailyStatsMap.get(eventDateStr)!;
       stats.totalEvents++;

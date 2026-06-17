@@ -23,6 +23,11 @@ async function main() {
     "sess_q7r8s9t0", "sess_u1v2w3x4", "sess_y5z6a7b8"
   ];
   
+  const browsers = ["Chrome", "Firefox", "Safari", "Edge", "Opera"];
+  const devices = ["desktop", "mobile", "tablet"];
+  const oses = ["Windows", "macOS", "Linux", "iOS", "Android"];
+  const countries = ["US", "IN", "GB", "DE", "FR", "JP", "CA"];
+
   // Create 20 mock events spread over the last 7 days
   const now = new Date();
   let createdCount = 0;
@@ -32,6 +37,10 @@ async function main() {
     const randomReferrer = referrers[Math.floor(Math.random() * referrers.length)];
     const randomEvent = eventTypes[Math.floor(Math.random() * eventTypes.length)];
     const randomSession = sessionIds[Math.floor(Math.random() * sessionIds.length)];
+    const randomBrowser = browsers[Math.floor(Math.random() * browsers.length)];
+    const randomDevice = devices[Math.floor(Math.random() * devices.length)];
+    const randomOs = oses[Math.floor(Math.random() * oses.length)];
+    const randomCountry = countries[Math.floor(Math.random() * countries.length)];
     
     // Distribute events over the last 7 days
     const randomDaysAgo = Math.floor(Math.random() * 7);
@@ -45,6 +54,10 @@ async function main() {
         path: randomPath,
         referrer: randomReferrer,
         sessionId: randomSession,
+        browser: randomBrowser,
+        device: randomDevice,
+        os: randomOs,
+        country: randomCountry,
         createdAt: eventTime
       }
     });

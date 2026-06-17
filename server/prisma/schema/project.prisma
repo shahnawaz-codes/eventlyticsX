@@ -1,7 +1,8 @@
 model Project {
-  id         String  @id @default(uuid())
+  id         String   @id @default(uuid())
   name       String
-  public_key String  @unique
+  public_key String   @unique
   userId     String
   events     Event[]
+  createdAt  DateTime @default(now())
 }

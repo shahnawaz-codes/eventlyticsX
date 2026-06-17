@@ -5,6 +5,7 @@ import {
   getProjectsService,
   getProjectByIdService,
   getProjectAnalyticsService,
+  deleteProjectService,
 } from "./service.js";
 
 export const createProject = async (
@@ -72,6 +73,11 @@ export const deleteProject = async (
   res: Response,
 ) => {
   try {
+    const { projectId } = req.params;
+    const project = await deleteProjectService(
+      projectId as string,
+      req.user?.id as string,
+    );
     res.json({ message: "successfully deleted" });
   } catch (error) {}
 };
