@@ -3,7 +3,6 @@ import {
   createProject,
   getProjects,
   getProjectDetail,
-  getProjectAnalytics,
   deleteProject,
 } from "./controller.js";
 import { requireAuth } from "../../middleware/auth.js";
@@ -15,6 +14,5 @@ route.post("/", requireAuth, createProject);
 route.get("/", requireAuth, getProjects);
 route.get("/:projectId", requireAuth, getProjectDetail);
 route.delete("/:projectId", requireAuth, deleteProject);
-route.get("/:projectId/analytics", requireAuth, getProjectAnalytics);
 
 export default route;

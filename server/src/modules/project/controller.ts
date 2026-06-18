@@ -4,7 +4,6 @@ import {
   createProjectService,
   getProjectsService,
   getProjectByIdService,
-  getProjectAnalyticsService,
   deleteProjectService,
 } from "./service.js";
 
@@ -80,27 +79,4 @@ export const deleteProject = async (
     );
     res.json({ message: "successfully deleted" });
   } catch (error) {}
-};
-
-export const getProjectAnalytics = async (
-  req: AuthenticatedRequest,
-  res: Response,
-) => {
-  try {
-    const { projectId } = req.params;
-    const project = await getProjectByIdService(
-      projectId as string,
-      req.user?.id as string,
-    );
-    if (!project) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Project not found" });
-    }
-    const analytics = await getProjectAnalyticsService(project.public_key);
-    res.status(200).json({ analytics });
-  } catch (error) {
-    console.error("Error getting project analytics:", error);
-    res.status(500).json({ success: false, message: "Internal server error" });
-  }
 };
