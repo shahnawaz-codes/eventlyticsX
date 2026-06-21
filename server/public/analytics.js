@@ -59,4 +59,4 @@ const Analytics = (function () {
     },
   };
 })();
-k;
+k
