@@ -1,33 +1,50 @@
 import { prisma } from "../../db.js";
 
+// Helper to construct date filters dynamically
+const getDateFilter = (startDate?: Date, endDate?: Date) => {  
+  if (!startDate && !endDate) return undefined;
+  return {
+    createdAt: {
+      ...(startDate && { gte: startDate }),
+      ...(endDate && { lte: endDate }),
+    },
+  };
+};
+
 const eventRepo = {
-  // 1. total Events
-  totalEvents: async function (projectKey: string) {
-    return await prisma.event.count({
-      where: { projectKey },
-    });
-  },
-  // 2. totalPageViews
-  totalPageviews: async function (projectKey: string) {
+  // 1. Total Events
+  totalEvents: async function (projectKey: string, startDate?: Date, endDate?: Date) {
     return await prisma.event.count({
       where: {
         projectKey,
-        eventType: "page-view",
+        ...getDateFilter(startDate, endDate),
       },
     });
   },
-  // 3. Unique visiter
-  uniqueVisitor: async function (projectKey: string) {
-    return await prisma.event.findMany({
+
+  // 2. Total Pageviews
+  totalPageviews: async function (projectKey: string, startDate?: Date, endDate?: Date) {
+    return await prisma.event.count({
       where: {
         projectKey,
+        eventType: { in: ["page-view", "pageview"] },
+        ...getDateFilter(startDate, endDate),
       },
-      select: {
-        sessionId: true,
-      },
-      distinct: ["sessionId"],
     });
   },
+
+  // 3. Unique Visitors Count
+  uniqueVisitorCount: async function (projectKey: string, startDate?: Date, endDate?: Date) {
+    const result = await prisma.event.groupBy({
+      by: ["sessionId"],
+      where: {
+        projectKey,
+        ...getDateFilter(startDate, endDate),
+      },
+    });
+    return result.length;
+  },
+
   // 4. Recent events log
   recentEvents: async (projectKey: string) => {
     return await prisma.event.findMany({
@@ -40,12 +57,15 @@ const eventRepo = {
       take: 15,
     });
   },
-  // 5. top 10 pages
-  topPages: async (projectKey: string) => {
-    /// group by path
+
+  // 5. Top pages
+  topPages: async (projectKey: string, startDate?: Date, endDate?: Date) => {
     const pageGroup = await prisma.event.groupBy({
       by: ["path"],
-      where: { projectKey },
+      where: {
+        projectKey,
+        ...getDateFilter(startDate, endDate),
+      },
       _count: {
         id: true,
       },
@@ -57,30 +77,172 @@ const eventRepo = {
         views: page._count.id,
       }))
       .sort((a, b) => b.views - a.views)
-      .slice(0, 8);
+      .slice(0, 10);
   },
-  topReferrers: async (projectKey: string) => {
+
+  // 6. Top referrers
+  topReferrers: async (projectKey: string, startDate?: Date, endDate?: Date) => {
     const referrersGroup = await prisma.event.groupBy({
       by: ["referrer"],
-      where: { projectKey },
+      where: {
+        projectKey,
+        ...getDateFilter(startDate, endDate),
+      },
       _count: {
         id: true,
       },
     });
+
     return referrersGroup
       .map((r) => ({
         referrer: r.referrer || "Direct",
-        referrals: r._count.id,
+        count: r._count.id,
       }))
-      .sort((a, b) => b.referrals - a.referrals)
-      .slice(0, 8);
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 10);
   },
-  // 7. Daily traffic trend for the last 7 days (Recharts visualization)
-  eventsInLast7Days: async () => {
+
+  // 7. Group by Browser and OS
+  groupByBrowserAndOS: async (projectKey: string, startDate?: Date, endDate?: Date) => {
+    const dateFilter = getDateFilter(startDate, endDate);
+
+    const browserGroup = await prisma.event.groupBy({
+      by: ["browser"],
+      where: {
+        projectKey,
+        ...dateFilter,
+      },
+      _count: {
+        id: true,
+      },
+    });
+
+    const browsers = browserGroup
+      .map((b) => ({
+        browser: b.browser || "Unknown",
+        count: b._count.id,
+      }))
+      .sort((a, b) => b.count - a.count);
+
+    const osGroup = await prisma.event.groupBy({
+      by: ["os"],
+      where: {
+        projectKey,
+        ...dateFilter,
+      },
+      _count: {
+        id: true,
+      },
+    });
+
+    const os = osGroup
+      .map((o) => ({
+        os: o.os || "Unknown",
+        count: o._count.id,
+      }))
+      .sort((a, b) => b.count - a.count);
+
+    return { browsers, os };
+  },
+
+  // 8. Group by Device & Country
+  groupByDeviceAndCountry: async (projectKey: string, startDate?: Date, endDate?: Date) => {
+    const dateFilter = getDateFilter(startDate, endDate);
+
+    const deviceGroup = await prisma.event.groupBy({
+      by: ["device"],
+      where: {
+        projectKey,
+        ...dateFilter,
+      },
+      _count: {
+        id: true,
+      },
+    });
+
+    const devices = deviceGroup
+      .map((d) => ({
+        device: d.device || "Unknown",
+        count: d._count.id,
+      }))
+      .sort((a, b) => b.count - a.count);
+
+    const countryGroup = await prisma.event.groupBy({
+      by: ["country"],
+      where: {
+        projectKey,
+        ...dateFilter,
+      },
+      _count: {
+        id: true,
+      },
+    });
+
+    const countries = countryGroup
+      .map((c) => ({
+        country: c.country || "Unknown",
+        count: c._count.id,
+      }))
+      .sort((a, b) => b.count - a.count);
+
+    return { devices, countries };
+  },
+
+  // 9. Daily traffic trend for the last 7 days (Recharts visualization)
+  eventsInLast7Days: async (projectKey: string) => {
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
     sevenDaysAgo.setHours(0, 0, 0, 0);
-    // TODO: perform db query and logic
-  },
 
+    const events = await prisma.event.findMany({
+      where: {
+        projectKey,
+        createdAt: {
+          gte: sevenDaysAgo,
+        },
+      },
+      select: {
+        createdAt: true,
+        eventType: true,
+        sessionId: true,
+      },
+      orderBy: {
+        createdAt: "asc",
+      },
+    });
+
+    const dailyStatsMap = new Map<string, { date: string; pageviews: number; visitors: Set<string> }>();
+
+    // Initialize last 7 days
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const dateStr = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+      dailyStatsMap.set(dateStr, {
+        date: dateStr,
+        pageviews: 0,
+        visitors: new Set<string>(),
+      });
+    }
+
+    // Populate stats
+    events.forEach((event) => {
+      const eventDateStr = new Date(event.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+      if (dailyStatsMap.has(eventDateStr)) {
+        const stats = dailyStatsMap.get(eventDateStr)!;
+        if (event.eventType === "page-view" || event.eventType === "pageview") {
+          stats.pageviews++;
+        }
+        stats.visitors.add(event.sessionId);
+      }
+    });
+
+    return Array.from(dailyStatsMap.values()).map((stats) => ({
+      date: stats.date,
+      pageviews: stats.pageviews,
+      uniqueVisitors: stats.visitors.size,
+    }));
+  },
 };
+
+export default eventRepo;
