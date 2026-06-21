@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { AuthProvider } from "@/components/auth-provider";
+import { AuthProvider } from "@/providers/auth-provider";
+import QueryProvider from "@/providers/query-provider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -15,7 +16,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "EventlyticsX | Privacy-First Web Analytics & Event Tracking",
-  description: "Track visitors, pageviews, and custom conversions in real-time. EventlyticsX is a fast, lightweight (<1KB script), privacy-compliant analytics platform for modern developers.",
+  description:
+    "Track visitors, pageviews, and custom conversions in real-time. EventlyticsX is a fast, lightweight (<1KB script), privacy-compliant analytics platform for modern developers.",
 };
 
 export default function RootLayout({
@@ -30,9 +32,9 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col bg-white text-zinc-900 font-sans selection:bg-blue-500/20 selection:text-blue-900">
-        <AuthProvider>
-          {children}
-        </AuthProvider>
+        <QueryProvider>
+          <AuthProvider>{children}</AuthProvider>
+        </QueryProvider>
       </body>
     </html>
   );
