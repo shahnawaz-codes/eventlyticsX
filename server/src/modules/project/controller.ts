@@ -26,7 +26,7 @@ export const createProject = async (
 
     return res
       .status(201)
-      .json({ public_key: project.public_key, id: project.id });
+      .json({ data: { public_key: project.public_key, id: project.id } });
   } catch (error) {
     console.error("Error creating project:", error);
     return res
@@ -37,8 +37,8 @@ export const createProject = async (
 
 export const getProjects = async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const projects = await getProjectsService(req.user?.id as string);
-    res.status(200).json({ projects });
+    const data = await getProjectsService(req.user?.id as string);
+    res.status(200).json({ data });
   } catch (error) {
     console.log("something goes wrong while getting projects", error);
     res.status(500).json({ success: false, message: "Internal server error" });
@@ -60,7 +60,7 @@ export const getProjectDetail = async (
         .status(404)
         .json({ success: false, message: "Project not found" });
     }
-    res.status(200).json({ project });
+    res.status(200).json({ data: project });
   } catch (error) {
     console.error("Error getting project details:", error);
     res.status(500).json({ success: false, message: "Internal server error" });

@@ -1,9 +1,11 @@
 import { prisma } from "../../db.js";
 
 // Helper to construct date filters dynamically
-const getDateFilter = (startDate?: Date, endDate?: Date) => {  
+const getDateFilter = (startDate?: Date, endDate?: Date) => {
   if (!startDate && !endDate) return undefined;
   return {
+    /** find events where createdAt >= startDate AND 
+    createdAt <= endDate */
     createdAt: {
       ...(startDate && { gte: startDate }),
       ...(endDate && { lte: endDate }),
@@ -13,7 +15,11 @@ const getDateFilter = (startDate?: Date, endDate?: Date) => {
 
 const eventRepo = {
   // 1. Total Events
-  totalEvents: async function (projectKey: string, startDate?: Date, endDate?: Date) {
+  totalEvents: async function (
+    projectKey: string,
+    startDate?: Date,
+    endDate?: Date,
+  ) {
     return await prisma.event.count({
       where: {
         projectKey,
@@ -23,7 +29,11 @@ const eventRepo = {
   },
 
   // 2. Total Pageviews
-  totalPageviews: async function (projectKey: string, startDate?: Date, endDate?: Date) {
+  totalPageviews: async function (
+    projectKey: string,
+    startDate?: Date,
+    endDate?: Date,
+  ) {
     return await prisma.event.count({
       where: {
         projectKey,
@@ -34,7 +44,11 @@ const eventRepo = {
   },
 
   // 3. Unique Visitors Count
-  uniqueVisitorCount: async function (projectKey: string, startDate?: Date, endDate?: Date) {
+  uniqueVisitorCount: async function (
+    projectKey: string,
+    startDate?: Date,
+    endDate?: Date,
+  ) {
     const result = await prisma.event.groupBy({
       by: ["sessionId"],
       where: {
@@ -81,7 +95,11 @@ const eventRepo = {
   },
 
   // 6. Top referrers
-  topReferrers: async (projectKey: string, startDate?: Date, endDate?: Date) => {
+  topReferrers: async (
+    projectKey: string,
+    startDate?: Date,
+    endDate?: Date,
+  ) => {
     const referrersGroup = await prisma.event.groupBy({
       by: ["referrer"],
       where: {
@@ -103,7 +121,11 @@ const eventRepo = {
   },
 
   // 7. Group by Browser and OS
-  groupByBrowserAndOS: async (projectKey: string, startDate?: Date, endDate?: Date) => {
+  groupByBrowserAndOS: async (
+    projectKey: string,
+    startDate?: Date,
+    endDate?: Date,
+  ) => {
     const dateFilter = getDateFilter(startDate, endDate);
 
     const browserGroup = await prisma.event.groupBy({
@@ -146,7 +168,11 @@ const eventRepo = {
   },
 
   // 8. Group by Device & Country
-  groupByDeviceAndCountry: async (projectKey: string, startDate?: Date, endDate?: Date) => {
+  groupByDeviceAndCountry: async (
+    projectKey: string,
+    startDate?: Date,
+    endDate?: Date,
+  ) => {
     const dateFilter = getDateFilter(startDate, endDate);
 
     const deviceGroup = await prisma.event.groupBy({
@@ -211,13 +237,19 @@ const eventRepo = {
       },
     });
 
-    const dailyStatsMap = new Map<string, { date: string; pageviews: number; visitors: Set<string> }>();
+    const dailyStatsMap = new Map<
+      string,
+      { date: string; pageviews: number; visitors: Set<string> }
+    >();
 
     // Initialize last 7 days
     for (let i = 6; i >= 0; i--) {
       const d = new Date();
       d.setDate(d.getDate() - i);
-      const dateStr = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+      const dateStr = d.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+      });
       dailyStatsMap.set(dateStr, {
         date: dateStr,
         pageviews: 0,
@@ -227,7 +259,10 @@ const eventRepo = {
 
     // Populate stats
     events.forEach((event) => {
-      const eventDateStr = new Date(event.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+      const eventDateStr = new Date(event.createdAt).toLocaleDateString(
+        "en-US",
+        { month: "short", day: "numeric" },
+      );
       if (dailyStatsMap.has(eventDateStr)) {
         const stats = dailyStatsMap.get(eventDateStr)!;
         if (event.eventType === "page-view" || event.eventType === "pageview") {
