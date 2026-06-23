@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { authClient, getJWTToken } from "@/lib/auth/client";
+import { useAuth, useUser } from "@clerk/nextjs";
 import {
   Activity,
   ArrowLeft,
@@ -17,8 +17,10 @@ import {
   FolderPlus,
   X,
   Layers,
-  ChevronRight
+  ChevronRight,
 } from "lucide-react";
+import { useProjects } from "@/modules/project/hooks/query";
+import { useCreateProject } from "@/modules/project/hooks/mutation";
 
 interface Project {
   id: string;
@@ -30,16 +32,16 @@ interface Project {
 type TabType = "intro" | "html" | "react" | "nextjs" | "api";
 
 function DocsContent() {
-  const session = authClient.useSession();
-  const user = session.data?.user;
-  const isPending = session.isPending;
+  const { isLoaded, isSignedIn } = useAuth();
+  const { data: projects, isLoading: loadingProjects } = useProjects();
+  const { mutateAsync: createProject, isPending: creating } = useCreateProject();
+  const { user } = useUser();
+  const isPending = !isLoaded;
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // Selected project & projects list
-  const [projects, setProjects] = useState<Project[]>([]);
+  // Selected project ID state
   const [selectedProjectId, setSelectedProjectId] = useState<string>("");
-  const [loadingProjects, setLoadingProjects] = useState(true);
 
   // Active documentation tab
   const [activeTab, setActiveTab] = useState<TabType>("intro");
@@ -50,116 +52,50 @@ function DocsContent() {
   // New project creation state
   const [showModal, setShowModal] = useState(false);
   const [newProjectName, setNewProjectName] = useState("");
-  const [creating, setCreating] = useState(false);
   const [modalError, setModalError] = useState<string | null>(null);
 
-  const API_BASE_URL = process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:5000";
+  const API_BASE_URL =
+    process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:5000";
 
   // Redirect to login if not authenticated
   useEffect(() => {
-    if (!isPending && !user) {
+    if (isLoaded && !isSignedIn) {
       router.push("/auth/sign-in");
     }
-  }, [isPending, user, router]);
+  }, [isLoaded, isSignedIn, router]);
 
-  // Load user's projects
+  // Pre-select project from query string or default to first project
   useEffect(() => {
-    if (user) {
-      fetchProjects();
-    }
-  }, [user]);
-
-  // Pre-select project from query string if available
-  useEffect(() => {
-    const projectQuery = searchParams.get("project");
-    if (projectQuery && projects.length > 0) {
-      const match = projects.find((p) => p.id === projectQuery);
+    if (projects && projects.length > 0) {
+      const projectQuery = searchParams.get("project");
+      const match = projects.find((p: Project) => p.id === projectQuery);
+      
       if (match) {
         setSelectedProjectId(match.id);
+      } else if (!selectedProjectId || !projects.some((p: Project) => p.id === selectedProjectId)) {
+        setSelectedProjectId(projects[0].id);
       }
     }
-  }, [searchParams, projects]);
-
-  const fetchProjects = async () => {
-    try {
-      setLoadingProjects(true);
-      const token = await getJWTToken();
-      if (!token) return;
-
-      const res = await fetch(`${API_BASE_URL}/api/projects`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        const list = data.projects || [];
-        setProjects(list);
-        
-        // If there are projects and none selected yet, default to first one
-        if (list.length > 0 && !selectedProjectId) {
-          // Verify if query param is set first, otherwise take the first
-          const projectQuery = searchParams.get("project");
-          const queryMatch = list.find((p: Project) => p.id === projectQuery);
-          setSelectedProjectId(queryMatch ? queryMatch.id : list[0].id);
-        }
-      }
-    } catch (err) {
-      console.error("Error loading projects:", err);
-    } finally {
-      setLoadingProjects(false);
-    }
-  };
+  }, [projects, searchParams, selectedProjectId]);
 
   const handleCreateProject = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newProjectName.trim()) return;
 
     try {
-      setCreating(true);
       setModalError(null);
-      const token = await getJWTToken();
+      const newProj = await createProject(newProjectName);
 
-      if (!token) {
-        throw new Error("Failed to retrieve authentication token");
+      if (newProj && newProj.id) {
+        setSelectedProjectId(newProj.id);
       }
 
-      const res = await fetch(`${API_BASE_URL}/api/projects`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ projectName: newProjectName }),
-      });
-
-      if (!res.ok) {
-        const errData = await res.json();
-        throw new Error(errData.message || "Failed to create project");
-      }
-
-      const newProjData = await res.json();
-      
-      const newProjectObj: Project = {
-        id: newProjData.id,
-        name: newProjectName,
-        public_key: newProjData.public_key,
-        userId: user?.id || "",
-      };
-
-      // Add to list and set as selected
-      setProjects((prev) => [newProjectObj, ...prev]);
-      setSelectedProjectId(newProjectObj.id);
-      
       // Clean up modal
       setNewProjectName("");
       setShowModal(false);
     } catch (err: any) {
       console.error("Error creating project in docs:", err);
       setModalError(err.message || "An unexpected error occurred.");
-    } finally {
-      setCreating(false);
     }
   };
 
@@ -169,12 +105,14 @@ function DocsContent() {
     setTimeout(() => setCopiedIndex(null), 2000);
   };
 
-  if (isPending || (!user && isPending)) {
+  if (isPending || (isSignedIn && loadingProjects)) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-zinc-50">
         <div className="flex flex-col items-center gap-3">
           <Activity className="h-8 w-8 animate-spin text-blue-600" />
-          <span className="text-sm font-medium text-zinc-500">Loading documentation...</span>
+          <span className="text-sm font-medium text-zinc-500">
+            Loading documentation...
+          </span>
         </div>
       </div>
     );
@@ -183,8 +121,10 @@ function DocsContent() {
   if (!user) return null;
 
   // Selected project details
-  const currentProject = projects.find((p) => p.id === selectedProjectId);
-  const activeKey = currentProject ? currentProject.public_key : "<YOUR_PUBLIC_KEY>";
+  const currentProject = projects?.find((p: Project) => p.id === selectedProjectId);
+  const activeKey = currentProject
+    ? currentProject.public_key
+    : "<YOUR_PUBLIC_KEY>";
 
   // SDK Code Snippets
   const trackingEndpoint = `${API_BASE_URL}/api/track`;
@@ -267,7 +207,9 @@ export default function RootLayout({ children }) {
               <ArrowLeft className="h-4 w-4" />
             </button>
             <div className="flex items-center gap-2">
-              <span className="text-sm font-semibold text-zinc-400">eventlyticsX</span>
+              <span className="text-sm font-semibold text-zinc-400">
+                eventlyticsX
+              </span>
               <span className="text-zinc-300 text-sm">/</span>
               <span className="text-sm font-bold text-zinc-800 flex items-center gap-1.5">
                 <BookOpen className="h-4 w-4 text-blue-650" /> Documentation
@@ -277,15 +219,17 @@ export default function RootLayout({ children }) {
 
           <div className="flex items-center gap-3">
             {/* Project Selection Dropdown */}
-            {projects.length > 0 ? (
+            {projects && projects.length > 0 ? (
               <div className="flex items-center gap-2">
-                <span className="text-xs font-semibold text-zinc-400 hidden sm:inline">Active Key:</span>
+                <span className="text-xs font-semibold text-zinc-400 hidden sm:inline">
+                  Active Key:
+                </span>
                 <select
                   value={selectedProjectId}
                   onChange={(e) => setSelectedProjectId(e.target.value)}
                   className="rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-zinc-700 outline-none focus:border-blue-500 transition-colors"
                 >
-                  {projects.map((p) => (
+                  {projects.map((p: Project) => (
                     <option key={p.id} value={p.id}>
                       {p.name} ({p.public_key.slice(0, 8)}...)
                     </option>
@@ -313,13 +257,12 @@ export default function RootLayout({ children }) {
 
       {/* Grid Container */}
       <div className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8 flex-1 flex flex-col lg:flex-row gap-8">
-        
         {/* SIDEBAR NAVIGATION (Gemini style) */}
         <aside className="lg:w-64 shrink-0 flex flex-col gap-1 lg:sticky lg:top-24 h-fit">
           <div className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider px-3 mb-2">
             Guides & SDKs
           </div>
-          
+
           <button
             onClick={() => setActiveTab("intro")}
             className={`w-full text-left flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-all select-none cursor-pointer ${
@@ -329,7 +272,9 @@ export default function RootLayout({ children }) {
             }`}
           >
             <span className="flex items-center gap-2">
-              <Sparkles className={`h-4 w-4 ${activeTab === "intro" ? "text-blue-600" : "text-zinc-400"}`} />
+              <Sparkles
+                className={`h-4 w-4 ${activeTab === "intro" ? "text-blue-600" : "text-zinc-400"}`}
+              />
               Getting Started
             </span>
             <ChevronRight className="h-3 w-3 opacity-60" />
@@ -344,7 +289,9 @@ export default function RootLayout({ children }) {
             }`}
           >
             <span className="flex items-center gap-2">
-              <Code className={`h-4 w-4 ${activeTab === "html" ? "text-blue-600" : "text-zinc-400"}`} />
+              <Code
+                className={`h-4 w-4 ${activeTab === "html" ? "text-blue-600" : "text-zinc-400"}`}
+              />
               HTML Script
             </span>
             <ChevronRight className="h-3 w-3 opacity-60" />
@@ -359,7 +306,9 @@ export default function RootLayout({ children }) {
             }`}
           >
             <span className="flex items-center gap-2">
-              <Code className={`h-4 w-4 ${activeTab === "react" ? "text-blue-600" : "text-zinc-400"}`} />
+              <Code
+                className={`h-4 w-4 ${activeTab === "react" ? "text-blue-600" : "text-zinc-400"}`}
+              />
               React SDK Hook
             </span>
             <ChevronRight className="h-3 w-3 opacity-60" />
@@ -374,7 +323,9 @@ export default function RootLayout({ children }) {
             }`}
           >
             <span className="flex items-center gap-2">
-              <Layers className={`h-4 w-4 ${activeTab === "nextjs" ? "text-blue-600" : "text-zinc-400"}`} />
+              <Layers
+                className={`h-4 w-4 ${activeTab === "nextjs" ? "text-blue-600" : "text-zinc-400"}`}
+              />
               Next.js Snippet
             </span>
             <ChevronRight className="h-3 w-3 opacity-60" />
@@ -389,7 +340,9 @@ export default function RootLayout({ children }) {
             }`}
           >
             <span className="flex items-center gap-2">
-              <Terminal className={`h-4 w-4 ${activeTab === "api" ? "text-blue-600" : "text-zinc-400"}`} />
+              <Terminal
+                className={`h-4 w-4 ${activeTab === "api" ? "text-blue-600" : "text-zinc-400"}`}
+              />
               API & cURL Reference
             </span>
             <ChevronRight className="h-3 w-3 opacity-60" />
@@ -398,7 +351,6 @@ export default function RootLayout({ children }) {
 
         {/* DOCUMENTATION VIEW (Right Panel) */}
         <main className="flex-1 bg-white rounded-2xl border border-zinc-200/80 p-6 sm:p-8 shadow-sm min-h-[500px]">
-          
           {/* 1. Introduction Guide */}
           {activeTab === "intro" && (
             <div className="space-y-6">
@@ -406,24 +358,33 @@ export default function RootLayout({ children }) {
                 <div className="inline-flex items-center gap-1 bg-blue-50 text-blue-600 text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider">
                   Introduction
                 </div>
-                <h1 className="text-2xl font-extrabold tracking-tight text-zinc-950">Getting Started with eventlyticsX</h1>
+                <h1 className="text-2xl font-extrabold tracking-tight text-zinc-950">
+                  Getting Started with eventlyticsX
+                </h1>
                 <p className="text-sm text-zinc-550 leading-relaxed">
-                  Welcome to eventlyticsX—the privacy-centric, lightweight, real-time analytics provider for developers. 
-                  Our tracker uses a single script less than 1KB, operates on an event-driven flow, and ensures 
-                  data compliance without cookies or intrusive fingerprinting.
+                  Welcome to eventlyticsX—the privacy-centric, lightweight,
+                  real-time analytics provider for developers. Our tracker uses
+                  a single script less than 1KB, operates on an event-driven
+                  flow, and ensures data compliance without cookies or intrusive
+                  fingerprinting.
                 </p>
               </div>
 
               <div className="space-y-4">
-                <h2 className="text-sm font-bold text-zinc-900 uppercase tracking-wider">Core Features</h2>
+                <h2 className="text-sm font-bold text-zinc-900 uppercase tracking-wider">
+                  Core Features
+                </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="rounded-xl border border-zinc-150 p-4 space-y-2 hover:border-zinc-350 transition-colors">
                     <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
                       <Activity className="h-4 w-4" />
                     </span>
-                    <h3 className="text-xs font-bold text-zinc-900">Real-Time Aggregates</h3>
+                    <h3 className="text-xs font-bold text-zinc-900">
+                      Real-Time Aggregates
+                    </h3>
                     <p className="text-xxs text-zinc-450 leading-normal">
-                      Monitor incoming traffic streams, views, and clicks with latency under 150ms.
+                      Monitor incoming traffic streams, views, and clicks with
+                      latency under 150ms.
                     </p>
                   </div>
 
@@ -431,9 +392,12 @@ export default function RootLayout({ children }) {
                     <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-50 text-indigo-650">
                       <Code className="h-4 w-4" />
                     </span>
-                    <h3 className="text-xs font-bold text-zinc-900">Multiple SDKs Supported</h3>
+                    <h3 className="text-xs font-bold text-zinc-900">
+                      Multiple SDKs Supported
+                    </h3>
                     <p className="text-xxs text-zinc-450 leading-normal">
-                      Native HTML scripts, React hooks, and Next.js Script embeds out of the box.
+                      Native HTML scripts, React hooks, and Next.js Script
+                      embeds out of the box.
                     </p>
                   </div>
                 </div>
@@ -443,9 +407,14 @@ export default function RootLayout({ children }) {
               <div className="rounded-xl bg-zinc-50 border border-zinc-200 p-4 flex gap-3 items-start">
                 <Key className="h-5 w-5 text-blue-600 shrink-0 mt-0.5" />
                 <div className="space-y-1">
-                  <h4 className="text-xs font-bold text-zinc-900">Personalize Your Code</h4>
+                  <h4 className="text-xs font-bold text-zinc-900">
+                    Personalize Your Code
+                  </h4>
                   <p className="text-xxs text-zinc-550 leading-normal">
-                    Select your active project in the top-right header, or create a new one using the **Generate Public Key** button. Once selected, all code blocks across the documentation tabs will automatically insert your unique public key!
+                    Select your active project in the top-right header, or
+                    create a new one using the **Generate Public Key** button.
+                    Once selected, all code blocks across the documentation tabs
+                    will automatically insert your unique public key!
                   </p>
                 </div>
               </div>
@@ -457,9 +426,12 @@ export default function RootLayout({ children }) {
                     <FolderPlus className="h-5 w-5" />
                   </div>
                   <div className="space-y-1 max-w-sm">
-                    <h3 className="text-xs font-bold text-zinc-900">No Projects Available</h3>
+                    <h3 className="text-xs font-bold text-zinc-900">
+                      No Projects Available
+                    </h3>
                     <p className="text-xxs text-zinc-550 leading-normal">
-                      Create a project workspace to instantly obtain an active tracking key and begin monitoring events.
+                      Create a project workspace to instantly obtain an active
+                      tracking key and begin monitoring events.
                     </p>
                   </div>
                   <button
@@ -480,22 +452,32 @@ export default function RootLayout({ children }) {
                 <div className="inline-flex items-center gap-1 bg-amber-50 text-amber-700 text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider">
                   HTML Script
                 </div>
-                <h1 className="text-2xl font-extrabold tracking-tight text-zinc-950">Integration with HTML / Vanilla JS</h1>
+                <h1 className="text-2xl font-extrabold tracking-tight text-zinc-950">
+                  Integration with HTML / Vanilla JS
+                </h1>
                 <p className="text-sm text-zinc-550 leading-relaxed">
-                  For static files or traditional multi-page websites, drop our CDN script tag into the head of your templates.
+                  For static files or traditional multi-page websites, drop our
+                  CDN script tag into the head of your templates.
                 </p>
               </div>
 
               <div className="space-y-3">
                 <div className="flex items-center justify-between text-xs font-bold text-zinc-700">
                   <span>Usage Snippet</span>
-                  <span className="text-[10px] font-medium text-zinc-400">Current Key: <code className="font-mono text-zinc-800">{activeKey.slice(0, 10)}...</code></span>
+                  <span className="text-[10px] font-medium text-zinc-400">
+                    Current Key:{" "}
+                    <code className="font-mono text-zinc-800">
+                      {activeKey.slice(0, 10)}...
+                    </code>
+                  </span>
                 </div>
-                
+
                 {/* Code panel */}
                 <div className="rounded-xl border border-zinc-200 bg-zinc-950 font-mono text-xs overflow-hidden shadow-md">
                   <div className="flex items-center justify-between bg-zinc-900 px-4 py-2 border-b border-zinc-800">
-                    <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider">index.html</span>
+                    <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider">
+                      index.html
+                    </span>
                     <button
                       onClick={() => handleCopyCode(htmlCode, 1)}
                       className="flex items-center gap-1.5 text-zinc-400 hover:text-white transition-colors cursor-pointer select-none text-[10px]"
@@ -503,7 +485,9 @@ export default function RootLayout({ children }) {
                       {copiedIndex === 1 ? (
                         <>
                           <Check className="h-3.5 w-3.5 text-emerald-500" />
-                          <span className="text-emerald-500 font-bold">Copied</span>
+                          <span className="text-emerald-500 font-bold">
+                            Copied
+                          </span>
                         </>
                       ) : (
                         <>
@@ -513,20 +497,34 @@ export default function RootLayout({ children }) {
                       )}
                     </button>
                   </div>
-                  <pre className="p-5 overflow-x-auto text-zinc-300 whitespace-pre">{htmlCode}</pre>
+                  <pre className="p-5 overflow-x-auto text-zinc-300 whitespace-pre">
+                    {htmlCode}
+                  </pre>
                 </div>
               </div>
 
               <div className="space-y-3 pt-2">
-                <h3 className="text-xs font-bold text-zinc-900 uppercase tracking-wider">Parameters details</h3>
+                <h3 className="text-xs font-bold text-zinc-900 uppercase tracking-wider">
+                  Parameters details
+                </h3>
                 <div className="space-y-2 text-xxs text-zinc-550">
                   <div className="flex items-start gap-2 border-b border-zinc-100 pb-2">
-                    <span className="font-mono bg-zinc-100 text-zinc-850 px-1.5 py-0.5 rounded font-bold">endPoint</span>
-                    <span className="leading-relaxed">The tracking URL where JSON request body events are POSTed.</span>
+                    <span className="font-mono bg-zinc-100 text-zinc-850 px-1.5 py-0.5 rounded font-bold">
+                      endPoint
+                    </span>
+                    <span className="leading-relaxed">
+                      The tracking URL where JSON request body events are
+                      POSTed.
+                    </span>
                   </div>
                   <div className="flex items-start gap-2 border-b border-zinc-100 pb-2">
-                    <span className="font-mono bg-zinc-100 text-zinc-850 px-1.5 py-0.5 rounded font-bold">projectKey</span>
-                    <span className="leading-relaxed">Your project's specific public key starting with <code className="font-mono text-zinc-850">evX_</code>.</span>
+                    <span className="font-mono bg-zinc-100 text-zinc-850 px-1.5 py-0.5 rounded font-bold">
+                      projectKey
+                    </span>
+                    <span className="leading-relaxed">
+                      Your project's specific public key starting with{" "}
+                      <code className="font-mono text-zinc-850">evX_</code>.
+                    </span>
                   </div>
                 </div>
               </div>
@@ -540,21 +538,32 @@ export default function RootLayout({ children }) {
                 <div className="inline-flex items-center gap-1 bg-cyan-50 text-cyan-700 text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider">
                   React Hook
                 </div>
-                <h1 className="text-2xl font-extrabold tracking-tight text-zinc-950">Integration with Single-Page React Applications</h1>
+                <h1 className="text-2xl font-extrabold tracking-tight text-zinc-950">
+                  Integration with Single-Page React Applications
+                </h1>
                 <p className="text-sm text-zinc-550 leading-relaxed">
-                  For client-rendered React applications, create a reusable custom Hook to inject the tracker script dynamically on app initialization.
+                  For client-rendered React applications, create a reusable
+                  custom Hook to inject the tracker script dynamically on app
+                  initialization.
                 </p>
               </div>
 
               <div className="space-y-3">
                 <div className="flex items-center justify-between text-xs font-bold text-zinc-700">
                   <span>Custom Hook Snippet</span>
-                  <span className="text-[10px] font-medium text-zinc-400">Current Key: <code className="font-mono text-zinc-800">{activeKey.slice(0, 10)}...</code></span>
+                  <span className="text-[10px] font-medium text-zinc-400">
+                    Current Key:{" "}
+                    <code className="font-mono text-zinc-800">
+                      {activeKey.slice(0, 10)}...
+                    </code>
+                  </span>
                 </div>
 
                 <div className="rounded-xl border border-zinc-200 bg-zinc-950 font-mono text-xs overflow-hidden shadow-md">
                   <div className="flex items-center justify-between bg-zinc-900 px-4 py-2 border-b border-zinc-800">
-                    <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider">useAnalytics.ts</span>
+                    <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider">
+                      useAnalytics.ts
+                    </span>
                     <button
                       onClick={() => handleCopyCode(reactCode, 2)}
                       className="flex items-center gap-1.5 text-zinc-400 hover:text-white transition-colors cursor-pointer select-none text-[10px]"
@@ -562,7 +571,9 @@ export default function RootLayout({ children }) {
                       {copiedIndex === 2 ? (
                         <>
                           <Check className="h-3.5 w-3.5 text-emerald-500" />
-                          <span className="text-emerald-500 font-bold">Copied</span>
+                          <span className="text-emerald-500 font-bold">
+                            Copied
+                          </span>
                         </>
                       ) : (
                         <>
@@ -572,14 +583,28 @@ export default function RootLayout({ children }) {
                       )}
                     </button>
                   </div>
-                  <pre className="p-5 overflow-x-auto text-zinc-300 whitespace-pre">{reactCode}</pre>
+                  <pre className="p-5 overflow-x-auto text-zinc-300 whitespace-pre">
+                    {reactCode}
+                  </pre>
                 </div>
               </div>
 
               <div className="space-y-3 pt-2">
-                <h3 className="text-xs font-bold text-zinc-900 uppercase tracking-wider">How to consume</h3>
+                <h3 className="text-xs font-bold text-zinc-900 uppercase tracking-wider">
+                  How to consume
+                </h3>
                 <p className="text-xxs text-zinc-550 leading-relaxed">
-                  Import the custom hook inside your main layout/entry component (e.g. <code className="font-mono bg-zinc-100 text-zinc-850 px-1 py-0.5 rounded">App.tsx</code> or <code className="font-mono bg-zinc-100 text-zinc-850 px-1 py-0.5 rounded">main.tsx</code>) and execute the function inside the default export component.
+                  Import the custom hook inside your main layout/entry component
+                  (e.g.{" "}
+                  <code className="font-mono bg-zinc-100 text-zinc-850 px-1 py-0.5 rounded">
+                    App.tsx
+                  </code>{" "}
+                  or{" "}
+                  <code className="font-mono bg-zinc-100 text-zinc-850 px-1 py-0.5 rounded">
+                    main.tsx
+                  </code>
+                  ) and execute the function inside the default export
+                  component.
                 </p>
               </div>
             </div>
@@ -592,21 +617,34 @@ export default function RootLayout({ children }) {
                 <div className="inline-flex items-center gap-1 bg-zinc-900 text-zinc-50 text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider">
                   Next.js
                 </div>
-                <h1 className="text-2xl font-extrabold tracking-tight text-zinc-950">Integration with Next.js (App Router)</h1>
+                <h1 className="text-2xl font-extrabold tracking-tight text-zinc-950">
+                  Integration with Next.js (App Router)
+                </h1>
                 <p className="text-sm text-zinc-550 leading-relaxed">
-                  Embed the lightweight tracking script utilizing Next.js native <code className="font-mono bg-zinc-100 text-zinc-850 px-1 py-0.5 rounded">next/script</code> utility for server-side optimization.
+                  Embed the lightweight tracking script utilizing Next.js native{" "}
+                  <code className="font-mono bg-zinc-100 text-zinc-850 px-1 py-0.5 rounded">
+                    next/script
+                  </code>{" "}
+                  utility for server-side optimization.
                 </p>
               </div>
 
               <div className="space-y-3">
                 <div className="flex items-center justify-between text-xs font-bold text-zinc-700">
                   <span>Layout Script Embed</span>
-                  <span className="text-[10px] font-medium text-zinc-400">Current Key: <code className="font-mono text-zinc-800">{activeKey.slice(0, 10)}...</code></span>
+                  <span className="text-[10px] font-medium text-zinc-400">
+                    Current Key:{" "}
+                    <code className="font-mono text-zinc-800">
+                      {activeKey.slice(0, 10)}...
+                    </code>
+                  </span>
                 </div>
 
                 <div className="rounded-xl border border-zinc-200 bg-zinc-950 font-mono text-xs overflow-hidden shadow-md">
                   <div className="flex items-center justify-between bg-zinc-900 px-4 py-2 border-b border-zinc-800">
-                    <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider">app/layout.tsx</span>
+                    <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider">
+                      app/layout.tsx
+                    </span>
                     <button
                       onClick={() => handleCopyCode(nextCode, 3)}
                       className="flex items-center gap-1.5 text-zinc-400 hover:text-white transition-colors cursor-pointer select-none text-[10px]"
@@ -614,7 +652,9 @@ export default function RootLayout({ children }) {
                       {copiedIndex === 3 ? (
                         <>
                           <Check className="h-3.5 w-3.5 text-emerald-500" />
-                          <span className="text-emerald-500 font-bold">Copied</span>
+                          <span className="text-emerald-500 font-bold">
+                            Copied
+                          </span>
                         </>
                       ) : (
                         <>
@@ -624,7 +664,9 @@ export default function RootLayout({ children }) {
                       )}
                     </button>
                   </div>
-                  <pre className="p-5 overflow-x-auto text-zinc-300 whitespace-pre">{nextCode}</pre>
+                  <pre className="p-5 overflow-x-auto text-zinc-300 whitespace-pre">
+                    {nextCode}
+                  </pre>
                 </div>
               </div>
             </div>
@@ -637,21 +679,31 @@ export default function RootLayout({ children }) {
                 <div className="inline-flex items-center gap-1 bg-red-50 text-red-700 text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider">
                   API cURL
                 </div>
-                <h1 className="text-2xl font-extrabold tracking-tight text-zinc-950">Direct API Integration (cURL Reference)</h1>
+                <h1 className="text-2xl font-extrabold tracking-tight text-zinc-950">
+                  Direct API Integration (cURL Reference)
+                </h1>
                 <p className="text-sm text-zinc-550 leading-relaxed">
-                  For backend-level event dispatching or customized tracking wrappers, interact with our POST API endpoint directly.
+                  For backend-level event dispatching or customized tracking
+                  wrappers, interact with our POST API endpoint directly.
                 </p>
               </div>
 
               <div className="space-y-3">
                 <div className="flex items-center justify-between text-xs font-bold text-zinc-700">
                   <span>POST API Request</span>
-                  <span className="text-[10px] font-medium text-zinc-400">Current Key: <code className="font-mono text-zinc-800">{activeKey.slice(0, 10)}...</code></span>
+                  <span className="text-[10px] font-medium text-zinc-400">
+                    Current Key:{" "}
+                    <code className="font-mono text-zinc-800">
+                      {activeKey.slice(0, 10)}...
+                    </code>
+                  </span>
                 </div>
 
                 <div className="rounded-xl border border-zinc-200 bg-zinc-950 font-mono text-xs overflow-hidden shadow-md">
                   <div className="flex items-center justify-between bg-zinc-900 px-4 py-2 border-b border-zinc-800">
-                    <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider">Terminal Request</span>
+                    <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider">
+                      Terminal Request
+                    </span>
                     <button
                       onClick={() => handleCopyCode(apiCurlCode, 4)}
                       className="flex items-center gap-1.5 text-zinc-400 hover:text-white transition-colors cursor-pointer select-none text-[10px]"
@@ -659,7 +711,9 @@ export default function RootLayout({ children }) {
                       {copiedIndex === 4 ? (
                         <>
                           <Check className="h-3.5 w-3.5 text-emerald-500" />
-                          <span className="text-emerald-500 font-bold">Copied</span>
+                          <span className="text-emerald-500 font-bold">
+                            Copied
+                          </span>
                         </>
                       ) : (
                         <>
@@ -669,12 +723,16 @@ export default function RootLayout({ children }) {
                       )}
                     </button>
                   </div>
-                  <pre className="p-5 overflow-x-auto text-zinc-300 whitespace-pre">{apiCurlCode}</pre>
+                  <pre className="p-5 overflow-x-auto text-zinc-300 whitespace-pre">
+                    {apiCurlCode}
+                  </pre>
                 </div>
               </div>
 
               <div className="space-y-3 pt-2">
-                <h3 className="text-xs font-bold text-zinc-900 uppercase tracking-wider">Response Format</h3>
+                <h3 className="text-xs font-bold text-zinc-900 uppercase tracking-wider">
+                  Response Format
+                </h3>
                 <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4 font-mono text-[11px] text-zinc-650">
                   <pre>{`{
   "success": true,
@@ -692,7 +750,6 @@ export default function RootLayout({ children }) {
               </div>
             </div>
           )}
-
         </main>
       </div>
 
@@ -700,7 +757,6 @@ export default function RootLayout({ children }) {
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-900/60 backdrop-blur-sm animate-fade-in">
           <div className="relative w-full max-w-md bg-white border border-zinc-200 rounded-2xl shadow-xl p-6 space-y-4">
-            
             {/* Modal Close */}
             <button
               onClick={() => {
@@ -720,7 +776,8 @@ export default function RootLayout({ children }) {
                 Generate Tracking Key
               </h3>
               <p className="text-xxs text-zinc-550 leading-relaxed">
-                Provide a name for your web application. We will generate a unique key configuration block to link your telemetry events.
+                Provide a name for your web application. We will generate a
+                unique key configuration block to link your telemetry events.
               </p>
             </div>
 
@@ -734,7 +791,10 @@ export default function RootLayout({ children }) {
             {/* Modal Form */}
             <form onSubmit={handleCreateProject} className="space-y-4">
               <div className="space-y-2">
-                <label htmlFor="docsProjectName" className="text-[10px] font-bold text-zinc-700 uppercase tracking-wider">
+                <label
+                  htmlFor="docsProjectName"
+                  className="text-[10px] font-bold text-zinc-700 uppercase tracking-wider"
+                >
                   Project Workspace Name
                 </label>
                 <input
@@ -779,7 +839,6 @@ export default function RootLayout({ children }) {
                 </button>
               </div>
             </form>
-
           </div>
         </div>
       )}
@@ -789,14 +848,18 @@ export default function RootLayout({ children }) {
 
 export default function DocsPage() {
   return (
-    <Suspense fallback={
-      <div className="flex min-h-screen items-center justify-center bg-zinc-50">
-        <div className="flex flex-col items-center gap-3">
-          <Activity className="h-8 w-8 animate-spin text-blue-600" />
-          <span className="text-sm font-medium text-zinc-500">Loading documentation...</span>
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-zinc-50">
+          <div className="flex flex-col items-center gap-3">
+            <Activity className="h-8 w-8 animate-spin text-blue-600" />
+            <span className="text-sm font-medium text-zinc-500">
+              Loading documentation...
+            </span>
+          </div>
         </div>
-      </div>
-    }>
+      }
+    >
       <DocsContent />
     </Suspense>
   );
