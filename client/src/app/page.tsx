@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
-import { authClient } from "@/lib/auth/client"
+import { useAuth, useUser, useClerk } from "@clerk/nextjs"
 
 import {
   Activity,
@@ -61,10 +61,10 @@ const REFERRERS = [
 ]
 
 export default function Home() {
-  const session = authClient.useSession();
-  const user = session.data?.user;
-  const isPending = session.isPending;
-
+  const { isLoaded, isSignedIn } = useAuth()
+  const { user } = useUser()
+  const { signOut } = useClerk()
+  const isPending = !isLoaded
   // Billing cycle state
   const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("yearly")
 
@@ -218,7 +218,7 @@ export default function Home() {
             ) : user ? (
               <div className="flex items-center gap-3">
                 <span className="text-sm font-medium text-zinc-650">
-                  {user.name || user.email}
+                  {user?.fullName || user?.primaryEmailAddress?.emailAddress}
                 </span>
                 <a
                   href="/dashboard"
@@ -228,7 +228,8 @@ export default function Home() {
                 </a>
                 <button
                   onClick={async () => {
-                    await authClient.signOut();
+
+                    await signOut();
                     window.location.reload();
                   }}
                   className="text-xs font-medium text-zinc-650 hover:text-zinc-950 px-3 py-1.5 rounded-lg hover:bg-zinc-50 border border-zinc-150 shadow-sm cursor-pointer select-none bg-white transition-all"
