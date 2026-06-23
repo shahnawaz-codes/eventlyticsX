@@ -23,15 +23,32 @@ export async function requireAuth(
   const token = authHeader.split(" ")[1];
 
   try {
-    if (!JWKS) {
-      const JWKS_URL = process.env.NEON_AUTH_JWKS_URL!;
-      JWKS = createRemoteJWKSet(new URL(JWKS_URL));
-    }
-
-    const { payload } = await jwtVerify(token, JWKS);
+    /**
+     * TODO: Implement Clerk JWT Token verification.
+     * 
+     * You need to verify that this token is signed by Clerk.
+     * You can either:
+     * 1. Use the `@clerk/backend` SDK to verify the token:
+     *    ```typescript
+     *    import { createClerkClient } from "@clerk/backend";
+     *    const clerkClient = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
+     *    const payload = await clerkClient.verifyToken(token);
+     *    req.user = { id: payload.sub, email: payload.email as string };
+     *    ```
+     * 2. Or verify manually using `jose` and Clerk's JWKS URL:
+     *    ```typescript
+     *    const JWKS_URL = `https://<your-clerk-frontend-api>/.well-known/jwks.json`;
+     *    const JWKS = createRemoteJWKSet(new URL(JWKS_URL));
+     *    const { payload } = await jwtVerify(token, JWKS);
+     *    req.user = { id: payload.sub!, email: payload.email as string };
+     *    ```
+     */
+    console.warn("Clerk Auth token verification is pending implementation. Mocking user session for testing.");
+    
+    // MOCK USER for testing before Clerk logic is wired up:
     req.user = {
-      id: payload.sub!,
-      email: payload.email as string,
+      id: "user_mock_12345",
+      email: "developer@eventlyticsx.com",
     };
     next();
   } catch (error) {
