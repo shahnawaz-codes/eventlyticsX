@@ -1,9 +1,14 @@
 "use client";
 
-import { AuthView } from "@neondatabase/auth-ui";
+import { SignIn, SignUp } from "@clerk/nextjs";
 import { useParams } from "next/navigation";
 import { Activity } from "lucide-react";
 
+/**
+ * Clerk Authentication Page.
+ * Renders the official Clerk SignIn or SignUp components inside the landing page structure.
+ * 
+ */
 export default function AuthPage() {
   const params = useParams();
   const authRoute = Array.isArray(params?.auth) ? params.auth[0] : "sign-in";
@@ -15,7 +20,7 @@ export default function AuthPage() {
       <div className="absolute top-10 right-1/4 -z-10 h-72 w-72 rounded-full bg-blue-400/10 blur-3xl" />
       <div className="absolute bottom-10 left-1/4 -z-10 h-72 w-72 rounded-full bg-blue-600/5 blur-3xl" />
 
-      <div className="w-full max-w-md space-y-6 p-8 bg-white rounded-2xl border border-zinc-200/80 shadow-xl shadow-zinc-200/40">
+      <div className="w-full max-w-md space-y-6 p-8 bg-white rounded-2xl border border-zinc-200/80 shadow-xl shadow-zinc-200/40 flex flex-col items-center">
         <div className="flex flex-col items-center">
           {/* Logo */}
           <div className="flex items-center gap-2 mb-4">
@@ -37,8 +42,18 @@ export default function AuthPage() {
           </p>
         </div>
 
-        <div className="mt-6">
-          <AuthView path={currentView} />
+        <div className="mt-6 w-full flex justify-center">
+          {currentView === "sign-up" ? (
+            <SignUp 
+              routing="hash" 
+              fallbackRedirectUrl="/dashboard"
+            />
+          ) : (
+            <SignIn 
+              routing="hash" 
+              fallbackRedirectUrl="/dashboard"
+            />
+          )}
         </div>
       </div>
     </div>
