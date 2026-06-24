@@ -1,5 +1,5 @@
 import express from "express";
-import { requireAuth } from "../../middleware/auth.js";
+import { protectedRoute } from "../../middleware/auth.js";
 import {
   getOverview,
   getRealtime,
@@ -10,9 +10,9 @@ import {
 const route = express.Router();
 
 // Analytics endpoints - Protected by auth middleware
-route.get("/overview", requireAuth, getOverview);
-route.get("/realtime", requireAuth, getRealtime);
-route.get("/breakdowns", requireAuth, getBreakdowns);
-route.get("/timeseries", requireAuth, getTimeseries);
+route.get("/overview", protectedRoute, getOverview);
+route.get("/realtime", protectedRoute, getRealtime);
+route.get("/breakdowns", protectedRoute, getBreakdowns);
+route.get("/timeseries", protectedRoute, getTimeseries);
 
 export default route;
