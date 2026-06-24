@@ -1,17 +1,5 @@
 import { prisma } from "../../db.js";
-
-// Helper to construct date filters dynamically
-const getDateFilter = (startDate?: Date, endDate?: Date) => {
-  if (!startDate && !endDate) return undefined;
-  return {
-    /** find events where createdAt >= startDate AND 
-    createdAt <= endDate */
-    createdAt: {
-      ...(startDate && { gte: startDate }),
-      ...(endDate && { lte: endDate }),
-    },
-  };
-};
+import { getDateFilter } from "../../utils/dateFilter.js";
 
 const eventRepo = {
   // 1. Total Events
