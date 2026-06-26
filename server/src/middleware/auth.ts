@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { getAuth, requireAuth } from "@clerk/express";
+import { prisma } from "../db.js";
 export interface AuthenticatedRequest extends Request {
   user?: {
     id: string;
@@ -13,10 +14,15 @@ export const protectedRoute = async (
   try {
     const auth = getAuth(req);
     if (!auth.userId) {
-      res.status(401).json("Unauthenticated --no Token found");
+      return res.status(401).json("Unauthenticated --no Token found");
     }
-    //TODO: validate user exist in db__ 1. if yes then attach to req obj with user field or 2. return Unauthorized
 
+    const isUser = await prisma.user.findUnique({
+      where: { id: auth.userId },
+    });
+    if (!isUser) {
+      return res.status(401).json("Unauthenticated");
+    }
     // for now i just return id
     const user = {
       id: auth.userId,
