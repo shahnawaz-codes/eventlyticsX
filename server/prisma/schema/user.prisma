@@ -1,6 +1,7 @@
 model User {
-  id        String   @unique
+  id        String    @unique
   name      String
-  email     String   @unique
-  createdAt DateTime @default(now())
+  email     String    @unique
+  projects   Project[]
+  createdAt DateTime  @default(now())
 }

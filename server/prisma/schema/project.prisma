@@ -2,6 +2,7 @@ model Project {
   id         String   @id @default(uuid())
   name       String
   public_key String   @unique
+  user       User     @relation(fields: [userId], references: [id])
   userId     String
   events     Event[]
   createdAt  DateTime @default(now())
