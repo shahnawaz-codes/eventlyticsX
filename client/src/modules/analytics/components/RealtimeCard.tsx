@@ -1,0 +1,125 @@
+"use client";
+
+import { CheckCircle2, ArrowRight } from "lucide-react";
+import { ResponsiveContainer, BarChart, Bar, Cell } from "recharts";
+
+interface RealtimeCountry {
+  country: string;
+  activeUsers: number;
+}
+
+interface RealtimeMinute {
+  minute: string;
+  activeUsers: number;
+}
+
+interface RealtimeCardProps {
+  activeCount?: number;
+  minuteData?: RealtimeMinute[];
+  countryData?: RealtimeCountry[];
+  onViewRealtime?: () => void;
+}
+
+const DEFAULT_MINUTE_DATA: RealtimeMinute[] = Array.from({ length: 30 }).map((_, idx) => ({
+  minute: `${30 - idx}m ago`,
+  // Generate some realistic real-time bumps
+  activeUsers: idx % 12 === 0 ? 2 : idx % 5 === 0 ? 1 : 0,
+}));
+
+const DEFAULT_COUNTRY_DATA: RealtimeCountry[] = [
+  { country: "Australia", activeUsers: 2 },
+  { country: "Canada", activeUsers: 1 },
+  { country: "Indonesia", activeUsers: 1 },
+];
+
+export default function RealtimeCard({
+  activeCount = 2,
+  minuteData = DEFAULT_MINUTE_DATA,
+  countryData = DEFAULT_COUNTRY_DATA,
+  onViewRealtime,
+}: RealtimeCardProps) {
+  const maxActiveUsers = Math.max(...countryData.map((c) => c.activeUsers), 1);
+
+  return (
+    <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm space-y-4 flex flex-col justify-between hover:shadow-md transition-shadow select-none">
+      {/* Header Info */}
+      <div className="flex items-start justify-between">
+        <div>
+          <h4 className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest border-b border-dashed border-zinc-200 pb-0.5 inline-block">
+            Active users in last 30 minutes
+          </h4>
+          <div className="flex items-baseline gap-2 mt-2">
+            <span className="text-5xl font-black text-zinc-900 tracking-tight">{activeCount}</span>
+            <span className="relative flex h-3.5 w-3.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-500 border-2 border-white shadow-sm"></span>
+            </span>
+          </div>
+        </div>
+        <CheckCircle2 className="h-4.5 w-4.5 text-emerald-500" />
+      </div>
+
+      {/* Bar chart per minute */}
+      <div className="space-y-1.5 flex-1 flex flex-col justify-center">
+        <h5 className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest">
+          Active users per minute
+        </h5>
+        
+        <div className="h-20 w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={minuteData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
+              <Bar dataKey="activeUsers" fill="#1a73e8">
+                {minuteData.map((entry, index) => (
+                  <Cell 
+                    key={`cell-${index}`} 
+                    fill={entry.activeUsers > 0 ? "#1a73e8" : "#e8eaed"} 
+                  />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      {/* Country List Table */}
+      <div className="space-y-2 border-t border-zinc-100 pt-3">
+        <div className="flex items-center justify-between text-[9px] font-bold text-zinc-400 uppercase tracking-wider">
+          <span>Country</span>
+          <span>Active Users</span>
+        </div>
+
+        <div className="space-y-2.5 max-h-36 overflow-y-auto pr-1">
+          {countryData.map((item, idx) => {
+            const pct = (item.activeUsers / maxActiveUsers) * 100;
+            return (
+              <div key={item.country || idx} className="flex flex-col gap-1">
+                <div className="flex items-center justify-between text-xs font-semibold text-zinc-700">
+                  <span className="truncate">{item.country}</span>
+                  <span className="font-bold text-zinc-900">{item.activeUsers}</span>
+                </div>
+                {/* Horizontal ratio progress bar */}
+                <div className="w-full h-1 bg-zinc-100 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-blue-500 rounded-full transition-all duration-500"
+                    style={{ width: `${pct}%` }}
+                  />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Footer Link */}
+      {onViewRealtime && (
+        <button
+          onClick={onViewRealtime}
+          className="flex items-center gap-1 text-[11px] font-bold text-blue-600 hover:text-blue-800 transition-all hover:gap-1.5 pt-2 border-t border-zinc-100 cursor-pointer self-start"
+        >
+          <span>View realtime</span>
+          <ArrowRight className="h-3.5 w-3.5" />
+        </button>
+      )}
+    </div>
+  );
+}
