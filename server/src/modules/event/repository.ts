@@ -202,17 +202,27 @@ const eventRepo = {
     return { devices, countries };
   },
 
-  // 9. Daily traffic trend for the last 7 days (Recharts visualization)
-  eventsInLast7Days: async (projectKey: string) => {
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-    sevenDaysAgo.setHours(0, 0, 0, 0);
+  // 9. Daily traffic trend for custom date range (Recharts visualization)
+  timeseriesTrend: async (
+    projectKey: string,
+    startDate?: Date,
+    endDate?: Date,
+  ) => {
+    const start = startDate ? new Date(startDate) : new Date();
+    if (!startDate) {
+      start.setDate(start.getDate() - 7);
+    }
+    start.setHours(0, 0, 0, 0);
+
+    const end = endDate ? new Date(endDate) : new Date();
+    end.setHours(23, 59, 59, 999);
 
     const events = await prisma.event.findMany({
       where: {
         projectKey,
         createdAt: {
-          gte: sevenDaysAgo,
+          gte: start,
+          lte: end,
         },
       },
       select: {
@@ -230,11 +240,10 @@ const eventRepo = {
       { date: string; pageviews: number; visitors: Set<string> }
     >();
 
-    // Initialize last 7 days
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date();
-      d.setDate(d.getDate() - i);
-      const dateStr = d.toLocaleDateString("en-US", {
+    // Calculate daily intervals in the range [start, end]
+    const current = new Date(start);
+    while (current <= end) {
+      const dateStr = current.toLocaleDateString("en-US", {
         month: "short",
         day: "numeric",
       });
@@ -243,6 +252,7 @@ const eventRepo = {
         pageviews: 0,
         visitors: new Set<string>(),
       });
+      current.setDate(current.getDate() + 1);
     }
 
     // Populate stats
