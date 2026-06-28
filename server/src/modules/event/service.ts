@@ -13,7 +13,15 @@ interface TrackEventInput {
 }
 
 export const trackEventService = async (input: TrackEventInput) => {
-  return await prisma.event.create({
+  const { projectKey } = input;
+  const project = await prisma.project.findUnique({
+    where: { public_key: projectKey },
+  });
+  if (!project) {
+    throw new Error(`Project with key ${projectKey} not found`);
+  }
+
+  const newEvent = await prisma.event.create({
     data: {
       eventType: input.event || "pageview",
       projectKey: input.projectKey as string,
@@ -26,4 +34,5 @@ export const trackEventService = async (input: TrackEventInput) => {
       country: input.country || "unknown",
     },
   });
+  return newEvent;
 };
