@@ -7,7 +7,7 @@ import {
   getTimeseriesService,
 } from "./service.js";
 
-// Helper to extract and validate date query parameters
+// Helper to extract and validate date query parameters 
 const parseDateParams = (startDateStr: any, endDateStr: any) => {
   const startDate = startDateStr ? new Date(startDateStr as string) : undefined;
   const endDate = endDateStr ? new Date(endDateStr as string) : undefined;
@@ -90,14 +90,17 @@ export const getBreakdowns = async (req: AuthenticatedRequest, res: Response) =>
 
 export const getTimeseries = async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const { projectId } = req.query;
+    const { projectId, startDate, endDate } = req.query;
     if (!projectId) {
       return res.status(400).json({ success: false, message: "projectId is required" });
     }
 
+    const dates = parseDateParams(startDate, endDate);
     const data = await getTimeseriesService(
       projectId as string,
       req.user?.id as string,
+      dates.startDate,
+      dates.endDate,
     );
 
     res.status(200).json({ success: true, data });
