@@ -16,8 +16,8 @@ const project = {
       },
     });
   },
-  
-  getProject: async ( projectId: string,userId: string,) => {
+
+  getProject: async (projectId: string, userId: string) => {
     return await prisma.project.findFirst({
       where: {
         id: projectId,
@@ -25,7 +25,6 @@ const project = {
       },
     });
   },
-  
 };
 
-export default project
+export default project;
