@@ -8,6 +8,7 @@ import { Project } from "@/modules/project/types";
 import { useProject } from "@/modules/project/hooks/query";
 import { useAnalytics } from "@/modules/analytics/hooks/useAnalytics";
 import GoogleAnalyticsDashboard from "@/modules/analytics/components/GoogleAnalyticsDashboard";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface EventItem {
   id: string;
@@ -100,35 +101,32 @@ export default function ProjectDetailsPage() {
   const { isLoaded } = useAuth();
   const router = useRouter();
   const params = useParams();
+  const queryClient = useQueryClient();
   const projectId = params?.projectId as string;
   
+  const [dateRange, setDateRange] = useState({
+    label: "Last 7 Days",
+    startDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+    endDate: new Date().toISOString(),
+  });
+
   const { data: project, isLoading: projectLoading } = useProject(projectId);
-  const { data: overview } = useAnalytics.overview(projectId);
+  const { data: overview, isLoading: overviewLoading } = useAnalytics.overview(projectId, dateRange);
+  const { data: breakdowns, isLoading: breakdownsLoading } = useAnalytics.breakdowns(projectId, dateRange);
+  const { data: timeseries, isLoading: timeseriesLoading } = useAnalytics.getTimeseries(projectId, dateRange);
+  const { data: realtime, isLoading: realtimeLoading } = useAnalytics.getRealtime(projectId, { refetchInterval: 5000 });
 
-  const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  // Sync loaded overview data to analytics, fallback to demo data if offline/empty
-  useEffect(() => {
-    if (overview) {
-      setAnalytics(overview);
-    } else {
-      setAnalytics(DEMO_ANALYTICS);
-    }
-  }, [overview]);
 
   const handleRefresh = async () => {
     try {
       setRefreshing(true);
-      await new Promise((resolve) => setTimeout(resolve, 600));
-      if (analytics) {
-        setAnalytics({
-          ...analytics,
-          totalEvents: analytics.totalEvents + Math.floor(Math.random() * 5) + 1,
-          totalPageviews: analytics.totalPageviews + Math.floor(Math.random() * 3) + 1,
-        });
-      }
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["overview", projectId] }),
+        queryClient.invalidateQueries({ queryKey: ["breakdowns", projectId] }),
+        queryClient.invalidateQueries({ queryKey: ["timeSeries", projectId] }),
+        queryClient.invalidateQueries({ queryKey: ["realtime", projectId] }),
+      ]);
     } catch (err: any) {
       console.error("Error refreshing analytics:", err);
     } finally {
@@ -152,12 +150,35 @@ export default function ProjectDetailsPage() {
   // Fallback to demo project if project is loading or not found (for easy offline visualization)
   const activeProject = project || DEMO_PROJECT;
 
+  // Format overview payload to match what GoogleAnalyticsDashboard expects
+  const formattedOverview = overview ? {
+    totalEvents: overview.totalEvents || 0,
+    totalPageviews: overview.totalPageviews || 0,
+    uniqueVisitors: overview.uniqueVisitors || 0,
+    recentEvents: realtime?.recentActivity || [],
+    topPages: [],
+    topReferrers: []
+  } : {
+    totalEvents: DEMO_ANALYTICS.totalEvents,
+    totalPageviews: DEMO_ANALYTICS.totalPageviews,
+    uniqueVisitors: DEMO_ANALYTICS.uniqueVisitors,
+    recentEvents: DEMO_ANALYTICS.recentEvents,
+    topPages: DEMO_ANALYTICS.topPages,
+    topReferrers: DEMO_ANALYTICS.topReferrers
+  };
+
   return (
     <GoogleAnalyticsDashboard
       project={activeProject}
-      overview={analytics}
+      overview={formattedOverview}
+      breakdowns={breakdowns || null}
+      timeseries={timeseries || null}
+      realtime={realtime || null}
+      dateRange={dateRange}
+      setDateRange={setDateRange}
       refreshing={refreshing}
       onRefresh={handleRefresh}
+      isLoading={overviewLoading || breakdownsLoading || timeseriesLoading}
     />
   );
 }
