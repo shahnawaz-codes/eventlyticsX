@@ -111,12 +111,18 @@ export const getBreakdownsService = async (
 export const getTimeseriesService = async (
   projectId: string,
   userId: string,
+  startDate?: Date,
+  endDate?: Date,
 ) => {
   const project = await getProjectByIdService(projectId, userId);
   if (!project) {
     throw new Error("Project not found or unauthorized");
   }
 
-  const trend = await eventRepo.eventsInLast7Days(project.public_key);
+  const trend = await eventRepo.timeseriesTrend(
+    project.public_key,
+    startDate,
+    endDate,
+  );
   return trend;
 };
