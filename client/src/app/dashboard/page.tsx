@@ -51,8 +51,8 @@ export default function DashboardPage() {
 
     const socket: Socket = io("http://localhost:5000");
     socket.on("connect", () => {
-      // Join the room for the specific project
-      socket.emit("join-project", "hahaha");
+      socket.emit("msg", { msg: "bacafshhaaa" });
+      socket.emit("msg2", { msg: "badaaa" });
     });
     return () => {
       console.log("cleaning up socket");
