@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { getAuth, requireAuth } from "@clerk/express";
-import { prisma } from "../db.js";
+import { prisma } from "../config/db.js";
 export interface AuthenticatedRequest extends Request {
   user?: {
     id: string;

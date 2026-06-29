@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { prisma } from "../../db.js";
+import { prisma } from "../../config/db.js";
 import project from "./repository.js";
 
 export const createProjectService = async (

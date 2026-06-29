@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { useCreateProject } from "@/modules/project/hooks/mutation";
 import { useProjects } from "@/modules/project/hooks/query";
+import { io, Socket } from "socket.io-client";
 
 interface Project {
   id: string;
@@ -27,12 +28,15 @@ interface Project {
 }
 
 export default function DashboardPage() {
+  //__Auth
   const { isLoaded, isSignedIn } = useAuth();
   const { user } = useUser();
   const { signOut } = useClerk();
   const isPending = !isLoaded;
   const router = useRouter();
-
+  //___copy
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+  //___Project
   const {
     mutateAsync: createProject,
     isPending: isCreating,
@@ -40,7 +44,21 @@ export default function DashboardPage() {
   } = useCreateProject();
   const { data: projects, isLoading: projectsLoading } = useProjects();
   const [newProjectName, setNewProjectName] = useState("");
-  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  // just for tesing purpose, later i will delete that
+  useEffect(() => {
+    console.log("socket running");
+
+    const socket: Socket = io("http://localhost:5000");
+    socket.on("connect", () => {
+      // Join the room for the specific project
+      socket.emit("join-project", "hahaha");
+    });
+    return () => {
+      console.log("cleaning up socket");
+      socket.disconnect();
+    };
+  }, []);
 
   const handleCreateProject = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,7 +72,6 @@ export default function DashboardPage() {
       console.error("Error creating project:", err);
     }
   };
-
   const handleCopyKey = (key: string, id: string) => {
     navigator.clipboard.writeText(key);
     setCopiedId(id);

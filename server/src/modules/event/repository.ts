@@ -1,4 +1,4 @@
-import { prisma } from "../../db.js";
+import { prisma } from "../../config/db.js";
 import { getDateFilter } from "../../utils/dateFilter.js";
 
 const eventRepo = {

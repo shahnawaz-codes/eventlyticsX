@@ -1,4 +1,4 @@
-import { prisma } from "../../db.js";
+import { prisma } from "../../config/db.js";
 
 const project = {
   getProjects: async (userId: string) => {
