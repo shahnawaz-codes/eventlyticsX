@@ -7,11 +7,11 @@ import analyticsRoute from "./modules/analytics/route.js";
 import { clerkMiddleware } from "@clerk/express";
 import morgan from "morgan";
 import { Webhook } from "svix";
-import { prisma } from "./db.js";
+import { prisma } from "./config/db.js";
+import { app, server } from "./socket.js";
 
 dotenv.config();
 
-const app = express();
 const PORT = process.env.PORT || 5000;
 
 app.use(
@@ -37,6 +37,7 @@ app.use(
         svixTimestamp,
         svixSignature,
       });
+
       return res.status(400).json({ error: "Missing Svix headers" });
     }
     try {
@@ -111,6 +112,6 @@ app.get("/api/health", (req: Request, res: Response) => {
 });
 
 // Start Server
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
