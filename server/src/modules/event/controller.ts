@@ -7,6 +7,7 @@ export const tracking = async (req: Request, res: Response) => {
     const { event, projectKey, sessionId, path, referrer } = req.body || {};
     const ua = req.headers["user-agent"];
     const result = new UAParser(ua).getResult();
+    
     const payload = {
       event,
       projectKey,
