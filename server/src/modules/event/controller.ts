@@ -7,7 +7,6 @@ export const tracking = async (req: Request, res: Response) => {
     const { event, projectKey, sessionId, path, referrer } = req.body || {};
     const ua = req.headers["user-agent"];
     const result = new UAParser(ua).getResult();
-    
     const payload = {
       event,
       projectKey,
@@ -20,6 +19,8 @@ export const tracking = async (req: Request, res: Response) => {
       country: "india",
     };
     const newEvent = await trackEventService(payload);
+    const io = req.app.get("io");
+    io.to(`dashboard:${newEvent.projectKey}`).emit("new-event", { event: newEvent });
     console.log("✅ Event tracked:", newEvent);
     res.status(200).json({ success: true, event: newEvent });
   } catch (error) {
