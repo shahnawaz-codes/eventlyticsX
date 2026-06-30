@@ -45,21 +45,7 @@ export default function DashboardPage() {
   const { data: projects, isLoading: projectsLoading } = useProjects();
   const [newProjectName, setNewProjectName] = useState("");
 
-  // just for tesing purpose, later i will delete that
-  useEffect(() => {
-    console.log("socket running");
-
-    const socket: Socket = io("http://localhost:5000");
-    socket.on("connect", () => {
-      socket.emit("msg", { msg: "bacafshhaaa" });
-      socket.emit("msg2", { msg: "badaaa" });
-    });
-    return () => {
-      console.log("cleaning up socket");
-      socket.disconnect();
-    };
-  }, []);
-
+ 
   const handleCreateProject = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newProjectName.trim()) return;

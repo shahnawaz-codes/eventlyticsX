@@ -10,6 +10,7 @@ import { useAnalytics } from "@/modules/analytics/hooks/useAnalytics";
 import GoogleAnalyticsDashboard from "@/modules/analytics/components/AnalyticsDashboard";
 import { useQueryClient } from "@tanstack/react-query";
 import AnalyticsDashboard from "@/modules/analytics/components/AnalyticsDashboard";
+import { io, Socket } from "socket.io-client";
 
 export default function ProjectDetailsPage() {
   const { isLoaded } = useAuth();
@@ -23,7 +24,6 @@ export default function ProjectDetailsPage() {
     startDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
     endDate: new Date().toISOString(),
   });
-
   const { data: project, isLoading: projectLoading } = useProject(projectId);
   const { data: overview, isLoading: overviewLoading } = useAnalytics.overview(
     projectId,
@@ -35,14 +35,25 @@ export default function ProjectDetailsPage() {
     useAnalytics.getTimeseries(projectId, dateRange);
   const { data: realtime, isLoading: realtimeLoading } =
     useAnalytics.getRealtime(projectId, { refetchInterval: 5000 });
-
   const [refreshing, setRefreshing] = useState(false);
-
   // Redirect to dashboard if project load completes but project is null
   useEffect(() => {
     if (isLoaded && !projectLoading && !project) {
       router.push("/dashboard");
     }
+    // just for tesing purpose, later i will delete that
+    console.log("socket running");
+    const socket: Socket = io("http://localhost:5000");
+    socket.on("connect", () => {
+      socket.emit("join-project", { projectKey: project?.public_key });
+      socket.on("new-event", ({ event }) => {
+        console.log("new event", event);
+      });
+    });
+    return () => {
+      console.log("cleaning up socket");
+      socket.disconnect();
+    };
   }, [isLoaded, projectLoading, project, router]);
 
   const handleRefresh = async () => {
