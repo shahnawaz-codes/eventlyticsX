@@ -18,12 +18,15 @@ app.set("io", io);
 //---------------------------------------------------------
 // establish the connection b/w server and client
 io.on("connection", (socket) => {
-
   console.log("hello bro", socket.id);
   // join perticular project and receive the projectId from client
-  socket.on("join-project", ({ projectKey }) => {
+  socket.on("join-project", ({ projectKey, startDate, endDate }) => {
     console.log("client:", projectKey);
+    // create seprate room for each project so that they can avoid conflict
     socket.join(`dashboard:${projectKey}`);
+    socket.in(`dashboard:${projectKey}`)
+    // Store the client's current date filters directly on their socket connection object!
+    socket.data.filter = { startDate, endDate };
   });
   socket.on("disconnect", () => {
     console.log("❌ Socket disconnected:", socket.id);
