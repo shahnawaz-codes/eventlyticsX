@@ -1,13 +1,12 @@
 "use client";
 
-import { useState } from "react";
 import {
   RefreshCw,
   ChevronDown,
   Activity,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { UserButton } from "@clerk/nextjs";
+import { useDashboardHeader } from "../hooks/useDashboardHeader";
 
 interface DashboardHeaderProps {
   projectName: string;
@@ -26,27 +25,15 @@ export default function DashboardHeader({
   dateRange,
   setDateRange,
 }: DashboardHeaderProps) {
-  const router = useRouter();
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [dateDropdownOpen, setDateDropdownOpen] = useState(false);
-
-  const dateOptions = [
-    {
-      label: "Last 24 Hours",
-      startDate: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-      endDate: new Date().toISOString(),
-    },
-    {
-      label: "Last 7 Days",
-      startDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-      endDate: new Date().toISOString(),
-    },
-    {
-      label: "Last 30 Days",
-      startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-      endDate: new Date().toISOString(),
-    },
-  ];
+  const {
+    dropdownOpen,
+    setDropdownOpen,
+    dateDropdownOpen,
+    setDateDropdownOpen,
+    dateOptions,
+    handleSelectDateOption,
+    handleNavigateToDashboard,
+  } = useDashboardHeader({ setDateRange });
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-zinc-100 bg-white/80 backdrop-blur-md select-none">
@@ -55,7 +42,7 @@ export default function DashboardHeader({
         <div className="flex items-center gap-4">
           {/* Logo Theme */}
           <div
-            onClick={() => router.push("/dashboard")}
+            onClick={handleNavigateToDashboard}
             className="flex items-center gap-2 cursor-pointer hover:opacity-90 active:scale-95 transition-all"
           >
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-600 shadow-md shadow-blue-500/20">
@@ -114,7 +101,7 @@ export default function DashboardHeader({
                     <button
                       onClick={() => {
                         setDropdownOpen(false);
-                        router.push("/dashboard");
+                        handleNavigateToDashboard();
                       }}
                       className="w-full text-left text-xs font-medium text-blue-600 hover:bg-blue-50 px-2 py-1.5 rounded-lg transition-colors cursor-pointer"
                     >
@@ -150,8 +137,7 @@ export default function DashboardHeader({
                     <button
                       key={opt.label}
                       onClick={() => {
-                        setDateRange(opt);
-                        setDateDropdownOpen(false);
+                        handleSelectDateOption(opt);
                       }}
                       className={`w-full text-left text-xs px-2.5 py-2 rounded-lg transition-colors cursor-pointer ${
                         dateRange.label === opt.label

@@ -1,7 +1,7 @@
 "use client";
 
-import { Home, BarChart2, Compass, Megaphone, Settings, ChevronLeft, ChevronRight } from "lucide-react";
-import { useState } from "react";
+import { Settings, ChevronLeft, ChevronRight } from "lucide-react";
+import { useDashboardSidebar } from "../hooks/useDashboardSidebar";
 
 interface DashboardSidebarProps {
   activeTab?: string;
@@ -12,14 +12,7 @@ export default function DashboardSidebar({
   activeTab = "home",
   onChangeTab,
 }: DashboardSidebarProps) {
-  const [collapsed, setCollapsed] = useState(true);
-
-  const navigationItems = [
-    { id: "home", label: "Home", icon: Home },
-    { id: "reports", label: "Reports", icon: BarChart2 },
-    { id: "explore", label: "Explore", icon: Compass },
-    { id: "advertising", label: "Advertising", icon: Megaphone },
-  ];
+  const { collapsed, setCollapsed, navigationItems } = useDashboardSidebar();
 
   return (
     <aside 
