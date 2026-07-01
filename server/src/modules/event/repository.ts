@@ -1,5 +1,5 @@
 import { prisma } from "../../config/db.js";
-import { getDateFilter } from "../../utils/dateFilter.js";
+import { getDateFilter } from "../../utils/date.js";
 
 const eventRepo = {
   // 1. Total Events
