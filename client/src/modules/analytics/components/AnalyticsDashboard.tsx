@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useAnalyticsDashboard } from "../hooks/useAnalyticsDashboard";
 import {
   Sparkles,
   Calendar,
@@ -74,7 +74,7 @@ export default function AnalyticsDashboard({
   onRefresh,
   isLoading = false,
 }: GoogleAnalyticsDashboardProps) {
-  const [activeTab, setActiveTab] = useState("home");
+  const { activeTab, setActiveTab } = useAnalyticsDashboard();
 
   return (
     <div className="flex flex-col min-h-screen bg-[#f8f9fa] text-zinc-800 font-sans">
