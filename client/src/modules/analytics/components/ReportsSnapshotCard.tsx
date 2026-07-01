@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { ChevronDown, ArrowRight, Award, CheckCircle } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -11,6 +10,7 @@ import {
   CartesianGrid,
   Tooltip,
 } from "recharts";
+import { useReportsSnapshotCard } from "../hooks/useReportsSnapshotCard";
 
 interface DailyStat {
   date: string;
@@ -35,8 +35,16 @@ export default function ReportsSnapshotCard({
   isLoading = false,
   onViewSnapshot,
 }: ReportsSnapshotCardProps) {
-  const [activeTab, setActiveTab] = useState<"activeUsers" | "eventCount" | "newUsers" | "keyEvents">("activeUsers");
-  const [timeRange, setTimeRange] = useState("Last 7 days");
+  const {
+    activeTab,
+    setActiveTab,
+    timeRange,
+    setTimeRange,
+    chartData,
+    totals,
+    tabs,
+    currentTab,
+  } = useReportsSnapshotCard({ data });
 
   if (isLoading) {
     return (
@@ -51,66 +59,32 @@ export default function ReportsSnapshotCard({
         </div>
         <div className="flex-1 flex items-end justify-between gap-4 pt-6 px-4">
           {[40, 60, 30, 80, 50, 70, 90].map((h, i) => (
-            <div key={i} className="bg-zinc-100 rounded-t w-full" style={{ height: `${h}%` }} />
+            <div
+              key={i}
+              className="bg-zinc-100 rounded-t w-full"
+              style={{ height: `${h}%` }}
+            />
           ))}
         </div>
       </div>
     );
   }
 
-  const resolvedData = data || [];
-
-  // Map incoming database timeseries format if necessary
-  const chartData = (resolvedData && resolvedData.length > 0 && "pageviews" in resolvedData[0])
-    ? (resolvedData as any[]).map((item, idx) => {
-        const uniqueVisitors = item.uniqueVisitors || 0;
-        const pageviews = item.pageviews || 0;
-        return {
-          date: item.date,
-          activeUsers: uniqueVisitors,
-          eventCount: pageviews,
-          newUsers: Math.ceil(uniqueVisitors * 0.7),
-          keyEvents: Math.floor(pageviews * 0.1),
-          // Preceding period comparisons (offsetting values to show dashed lines)
-          activeUsersPrev: Math.max(0, uniqueVisitors - (idx % 2 === 0 ? 1 : 0)),
-          eventCountPrev: Math.max(0, pageviews - (idx % 3 === 0 ? 2 : 1)),
-          newUsersPrev: Math.max(0, Math.ceil(uniqueVisitors * 0.7) - (idx % 2 === 0 ? 1 : 0)),
-          keyEventsPrev: Math.max(0, Math.floor(pageviews * 0.1) - (idx % 4 === 0 ? 1 : 0)),
-        };
-      })
-    : (resolvedData as DailyStat[]);
-
   if (chartData.length === 0) {
     return (
       <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm h-96 flex flex-col items-center justify-center text-center select-none">
         <div className="text-zinc-400 space-y-2">
-          <p className="font-semibold text-sm">No data recorded for this time range</p>
-          <p className="text-xs max-w-sm">Integrate the tracking script and trigger events to see chronological traffic trends here.</p>
+          <p className="font-semibold text-sm">
+            No data recorded for this time range
+          </p>
+          <p className="text-xs max-w-sm">
+            Integrate the tracking script and trigger events to see
+            chronological traffic trends here.
+          </p>
         </div>
       </div>
     );
   }
-
-  // Sum or average metrics for tab headers
-  const getTotals = () => {
-    return {
-      activeUsers: chartData[chartData.length - 1]?.activeUsers || 0,
-      eventCount: chartData.reduce((sum, item) => sum + item.eventCount, 0),
-      newUsers: chartData.reduce((sum, item) => sum + item.newUsers, 0),
-      keyEvents: chartData.reduce((sum, item) => sum + item.keyEvents, 0),
-    };
-  };
-
-  const totals = getTotals();
-
-  const tabs = [
-    { id: "activeUsers", label: "Active users", value: totals.activeUsers, key: "activeUsers", prevKey: "activeUsersPrev" },
-    { id: "eventCount", label: "Event count", value: totals.eventCount, key: "eventCount", prevKey: "eventCountPrev" },
-    { id: "newUsers", label: "New users", value: totals.newUsers, key: "newUsers", prevKey: "newUsersPrev" },
-    { id: "keyEvents", label: "Key events", value: totals.keyEvents, key: "keyEvents", prevKey: "keyEventsPrev" },
-  ] as const;
-
-  const currentTab = tabs.find((t) => t.id === activeTab)!;
 
   return (
     <div className="rounded-2xl border border-zinc-200 bg-white shadow-sm flex flex-col overflow-hidden select-none hover:shadow-md transition-shadow">
@@ -134,7 +108,7 @@ export default function ReportsSnapshotCard({
                 {tab.value}
               </div>
               <div className="w-2.5 h-2.5 rounded-full bg-zinc-200 mt-2 self-start border border-white shadow-sm" />
-              
+
               {/* Highlight bar */}
               {isSelected && (
                 <div className="absolute bottom-0 left-0 right-0 h-1 bg-blue-600 animate-in fade-in zoom-in-y duration-200" />
@@ -145,10 +119,16 @@ export default function ReportsSnapshotCard({
 
         {/* Floating helper badges */}
         <div className="absolute right-4 top-4 hidden md:flex items-center gap-2">
-          <button className="p-1 rounded-full text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 transition-colors" title="Insights">
+          <button
+            className="p-1 rounded-full text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 transition-colors"
+            title="Insights"
+          >
             <Award className="h-4 w-4" />
           </button>
-          <button className="p-1 rounded-full text-emerald-500 hover:text-emerald-700 hover:bg-emerald-50 transition-colors" title="Data quality is active">
+          <button
+            className="p-1 rounded-full text-emerald-500 hover:text-emerald-700 hover:bg-emerald-50 transition-colors"
+            title="Data quality is active"
+          >
             <CheckCircle className="h-4 w-4" />
           </button>
         </div>
@@ -158,16 +138,23 @@ export default function ReportsSnapshotCard({
       <div className="p-5 flex-1 flex flex-col gap-6">
         <div className="h-72 w-full">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
+            <AreaChart
+              data={chartData}
+              margin={{ top: 10, right: 10, left: -25, bottom: 0 }}
+            >
               <defs>
                 <linearGradient id="currentGrad" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#1a73e8" stopOpacity={0.15} />
                   <stop offset="95%" stopColor="#1a73e8" stopOpacity={0.0} />
                 </linearGradient>
               </defs>
-              
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f3f4" />
-              
+
+              <CartesianGrid
+                strokeDasharray="3 3"
+                vertical={false}
+                stroke="#f1f3f4"
+              />
+
               <XAxis
                 dataKey="date"
                 stroke="#70757a"
@@ -176,7 +163,7 @@ export default function ReportsSnapshotCard({
                 axisLine={false}
                 dy={8}
               />
-              
+
               <YAxis
                 stroke="#70757a"
                 fontSize={10}
@@ -184,7 +171,7 @@ export default function ReportsSnapshotCard({
                 axisLine={false}
                 allowDecimals={false}
               />
-              
+
               <Tooltip
                 contentStyle={{
                   backgroundColor: "#202124",

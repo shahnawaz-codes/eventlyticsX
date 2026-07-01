@@ -2,6 +2,7 @@
 
 import { CheckCircle2, ArrowRight } from "lucide-react";
 import { ResponsiveContainer, BarChart, Bar, Cell } from "recharts";
+import { useRealtimeCard } from "../hooks/useRealtimeCard";
 
 interface RealtimeCountry {
   country: string;
@@ -25,23 +26,17 @@ interface RealtimeCardProps {
   onViewRealtime?: () => void;
 }
 
-const DEFAULT_MINUTE_DATA: RealtimeMinute[] = Array.from({ length: 30 }).map(
-  (_, idx) => ({
-    minute: `${30 - idx}m ago`,
-    activeUsers: 0,
-  }),
-);
-
-const DEFAULT_COUNTRY_DATA: RealtimeCountry[] = [];
-
 export default function RealtimeCard({
   activeCount = 0,
-  minuteData = DEFAULT_MINUTE_DATA,
-  countryData = DEFAULT_COUNTRY_DATA,
+  minuteData,
+  countryData,
   realtime,
   isLoading = false,
   onViewRealtime,
 }: RealtimeCardProps) {
+  const { calculatedMinuteData, calculatedCountryData, maxActiveUsers } =
+    useRealtimeCard({ minuteData, countryData, realtime });
+
   if (isLoading) {
     return (
       <div className="rounded-2xl border border-zinc-200 bg-white p-5 h-[380px] shadow-sm flex flex-col justify-between select-none animate-pulse">
@@ -69,57 +64,6 @@ export default function RealtimeCard({
       </div>
     );
   }
-
-  // Dynamically calculate from recent activity logs if available
-  const recentLogs = realtime?.recentActivity || [];
-
-  // 1. Calculate active users per minute for the last 30 minutes
-  let calculatedMinuteData = minuteData;
-  if (realtime && recentLogs.length > 0) {
-    const minutesMap = new Map<number, number>();
-    for (let i = 0; i < 30; i++) {
-      minutesMap.set(i, 0);
-    }
-    const now = Date.now();
-    recentLogs.forEach((log: any) => {
-      const diffMs = now - new Date(log.createdAt).getTime();
-      const diffMins = Math.floor(diffMs / (1000 * 60));
-      if (diffMins >= 0 && diffMins < 30) {
-        minutesMap.set(diffMins, (minutesMap.get(diffMins) || 0) + 1);
-      }
-    });
-    calculatedMinuteData = Array.from({ length: 30 }).map((_, idx) => {
-      const mIndex = 29 - idx;
-      return {
-        minute: `${mIndex}m ago`,
-        activeUsers: minutesMap.get(mIndex) || 0,
-      };
-    });
-  }
-
-  // 2. Calculate country distribution from recent activity
-  let calculatedCountryData = countryData;
-  if (realtime && recentLogs.length > 0) {
-    const countryMap = new Map<string, Set<string>>();
-    recentLogs.forEach((log: any) => {
-      const c = log.country || "Unknown";
-      if (!countryMap.has(c)) {
-        countryMap.set(c, new Set());
-      }
-      countryMap.get(c)!.add(log.sessionId);
-    });
-    calculatedCountryData = Array.from(countryMap.entries())
-      .map(([country, sessions]) => ({
-        country,
-        activeUsers: sessions.size,
-      }))
-      .sort((a, b) => b.activeUsers - a.activeUsers);
-  }
-
-  const maxActiveUsers = Math.max(
-    ...calculatedCountryData.map((c) => c.activeUsers),
-    1,
-  );
 
   return (
     <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm space-y-4 flex flex-col justify-between hover:shadow-md transition-shadow select-none">
