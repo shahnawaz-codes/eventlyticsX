@@ -1,6 +1,7 @@
 "use client";
 
 import { CheckCircle2, ChevronDown } from "lucide-react";
+import { useSuggestedForYou } from "../hooks/useSuggestedForYou";
 
 interface BreakDownRow {
   label: string;
@@ -24,7 +25,7 @@ function BreakdownWidget({ title, subtitle, rows, filterLabel }: BreakdownCardPr
           {/* Dropdown title filter */}
           <button className="flex items-center gap-1 text-[11px] font-bold text-zinc-500 hover:text-zinc-800 transition-colors">
             <span>{title}</span>
-            <ChevronDown className="h-3 w-3 text-zinc-400" />
+            <ChevronDown className="h-3 w-3 text-zinc-405" />
           </button>
           <p className="text-[10px] text-zinc-400 font-medium">{subtitle}</p>
         </div>
@@ -61,7 +62,7 @@ function BreakdownWidget({ title, subtitle, rows, filterLabel }: BreakdownCardPr
       </div>
 
       {/* Action Footer */}
-      <div className="border-t border-zinc-100 pt-3.5 flex items-center justify-between text-[10px] font-bold text-zinc-400 uppercase tracking-wider">
+      <div className="border-t border-zinc-100 pt-3.5 flex items-center justify-between text-[10px] font-bold text-zinc-405 uppercase tracking-wider">
         <span>{filterLabel}</span>
         <button className="text-blue-600 hover:text-blue-800 cursor-pointer">
           See details
@@ -81,6 +82,9 @@ interface SuggestedForYouProps {
 }
 
 export default function SuggestedForYou({ breakdowns, isLoading = false }: SuggestedForYouProps) {
+  const { countryBreakdown, pageBreakdown, channelBreakdown } =
+    useSuggestedForYou({ breakdowns });
+
   if (isLoading) {
     return (
       <div className="space-y-4 select-none">
@@ -114,18 +118,6 @@ export default function SuggestedForYou({ breakdowns, isLoading = false }: Sugge
       </div>
     );
   }
-
-  const countryBreakdown = (breakdowns?.countries && breakdowns.countries.length > 0)
-    ? breakdowns.countries.map((c) => ({ label: c.country || "Unknown", value: c.count }))
-    : [];
-
-  const pageBreakdown = (breakdowns?.pages && breakdowns.pages.length > 0)
-    ? breakdowns.pages.map((p) => ({ label: p.path, value: p.views }))
-    : [];
-
-  const channelBreakdown = (breakdowns?.referrers && breakdowns.referrers.length > 0)
-    ? breakdowns.referrers.map((r) => ({ label: r.referrer || "Direct", value: r.count }))
-    : [];
 
   return (
     <div className="space-y-4 select-none">
