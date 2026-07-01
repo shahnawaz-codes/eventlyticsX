@@ -45,10 +45,21 @@ export default function ProjectDetailsPage() {
     console.log("socket running");
     const socket: Socket = io("http://localhost:5000");
     socket.on("connect", () => {
-      socket.emit("join-project", { projectKey: project?.public_key });
-      socket.on("new-event", ({ event }) => {
-        console.log("new event", event);
+      socket.emit("join-project", {
+        projectKey: project?.public_key,
+        startDate: dateRange?.startDate,
+        endDate: dateRange.endDate,
       });
+      socket.on(
+        "update-overview",
+        ({ totalEvents, totalPageviews, uniqueVisitors }) => {
+          console.table({
+            totalEvents,
+            totalPageviews,
+            uniqueVisitors,
+          });
+        },
+      );
     });
     return () => {
       console.log("cleaning up socket");
