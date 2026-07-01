@@ -49,15 +49,24 @@ export default function ProjectDetailsPage() {
         projectKey: project?.public_key,
         startDate: dateRange?.startDate,
         endDate: dateRange.endDate,
+        label: dateRange.label,
       });
       socket.on(
         "update-overview",
-        ({ totalEvents, totalPageviews, uniqueVisitors }) => {
+        (overview: {
+          totalEvents: number;
+          totalPageviews: number;
+          uniqueVisitors: number;
+        }) => {
           console.table({
-            totalEvents,
-            totalPageviews,
-            uniqueVisitors,
+            totalEvents: overview.totalEvents,
+            totalPageviews: overview.totalPageviews,
+            uniqueVisitors: overview.uniqueVisitors,
           });
+          queryClient.setQueryData(
+            ["overview", projectId, dateRange],
+            overview,
+          );
         },
       );
     });
@@ -65,11 +74,26 @@ export default function ProjectDetailsPage() {
       console.log("cleaning up socket");
       socket.disconnect();
     };
-  }, [isLoaded, projectLoading, project, router]);
+  }, [isLoaded, projectLoading, project, router,dateRange]);
 
   const handleRefresh = async () => {
     try {
       setRefreshing(true);
+      
+      const now = new Date();
+      let startDiffMs = 7 * 24 * 60 * 60 * 1000; // default to 7 days
+      if (dateRange.label === "Last 24 Hours") {
+        startDiffMs = 24 * 60 * 60 * 1000;
+      } else if (dateRange.label === "Last 30 Days") {
+        startDiffMs = 30 * 24 * 60 * 60 * 1000;
+      }
+      
+      setDateRange({
+        label: dateRange.label,
+        startDate: new Date(now.getTime() - startDiffMs).toISOString(),
+        endDate: now.toISOString(),
+      });
+
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["overview", projectId] }),
         queryClient.invalidateQueries({ queryKey: ["breakdowns", projectId] }),

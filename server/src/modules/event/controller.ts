@@ -32,23 +32,38 @@ export const tracking = async (req: Request, res: Response) => {
       .in(`dashboard:${newEvent.projectKey}`)
       .fetchSockets();
     for (const socket of sockets) {
-      const { startDate, endDate } = socket.data.filters || {};
+      const { startDate, endDate, label } = socket.data.filters || {};
+
+      let resolvedStartDate = startDate ? new Date(startDate) : undefined;
+      let resolvedEndDate = endDate ? new Date(endDate) : undefined;
+
+      if (label) {
+        const now = new Date();
+        resolvedEndDate = now;
+        if (label === "Last 24 Hours") {
+          resolvedStartDate = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+        } else if (label === "Last 7 Days") {
+          resolvedStartDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        } else if (label === "Last 30 Days") {
+          resolvedStartDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        }
+      }
 
       // Run the server-side aggregation from eventRepo!
       const totalEvents = await eventRepo.totalEvents(
         newEvent.projectKey,
-        startDate,
-        endDate,
+        resolvedStartDate,
+        resolvedEndDate,
       );
       const totalPageviews = await eventRepo.totalPageviews(
         newEvent.projectKey,
-        startDate,
-        endDate,
+        resolvedStartDate,
+        resolvedEndDate,
       );
       const uniqueVisitors = await eventRepo.uniqueVisitorCount(
         newEvent.projectKey,
-        startDate,
-        endDate,
+        resolvedStartDate,
+        resolvedEndDate,
       );
       // Send the fresh aggregates directly to this specific developer's socket
       socket.emit("update-overview", {

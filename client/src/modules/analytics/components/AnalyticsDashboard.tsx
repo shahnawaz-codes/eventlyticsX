@@ -19,6 +19,7 @@ import RealtimeCard from "./RealtimeCard";
 import RecentlyAccessed from "./RecentlyAccessed";
 import SuggestedForYou from "./SuggestedForYou";
 import LearningChallenges from "./LearningChallenges";
+import OverviewCards from "./OverviewCards";
 
 interface EventItem {
   id: string;
@@ -114,6 +115,9 @@ export default function AnalyticsDashboard({
                   <span>Public Key Active</span>
                 </div>
               </div>
+
+              {/* Row 0: Overview KPI Cards */}
+              <OverviewCards overview={overview} isLoading={isLoading} />
 
               {/* Row 1: Main Area Chart (ReportsSnapshotCard) + Realtime active counter (RealtimeCard) */}
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
