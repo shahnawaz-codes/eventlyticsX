@@ -6,7 +6,7 @@ const app = expres();
 // create http server
 const server = http.createServer(app);
 // accept the socket upgrade req and set the cors config for security
-const io = new Server(server, {
+export const io = new Server(server, {
   cors: {
     origin: "http://localhost:3000",
     methods: ["GET", "POST"],
@@ -20,13 +20,13 @@ app.set("io", io);
 io.on("connection", (socket) => {
   console.log("hello bro", socket.id);
   // join perticular project and receive the projectId from client
-  socket.on("join-project", ({ projectKey, startDate, endDate, label }) => {
+  socket.on("join-project", ({ projectKey, label }) => {
     console.log("client:", projectKey);
     // create seprate room for each project so that they can avoid conflict
     socket.join(`dashboard:${projectKey}`);
-    socket.in(`dashboard:${projectKey}`)
+    socket.in(`dashboard:${projectKey}`);
     // Store the client's current date filters directly on their socket connection object!
-    socket.data.filters = { startDate, endDate, label };
+    socket.data.filters = { label };
   });
   socket.on("disconnect", () => {
     console.log("❌ Socket disconnected:", socket.id);
