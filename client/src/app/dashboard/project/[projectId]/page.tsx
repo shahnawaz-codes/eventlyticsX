@@ -2,15 +2,17 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { subDays, subHours } from "date-fns";
 import { useAuth, useUser } from "@clerk/nextjs";
 import { Activity, Settings, ArrowLeft } from "lucide-react";
 import { Project } from "@/modules/project/types";
 import { useProject } from "@/modules/project/hooks/query";
-import { useAnalytics } from "@/modules/analytics/hooks/useAnalytics";
+import { useAnalytics } from "@/modules/analytics/hooks/query/useAnalytics";
 import GoogleAnalyticsDashboard from "@/modules/analytics/components/AnalyticsDashboard";
 import { useQueryClient } from "@tanstack/react-query";
 import AnalyticsDashboard from "@/modules/analytics/components/AnalyticsDashboard";
 import { io, Socket } from "socket.io-client";
+import { useAnalyticsSoket } from "@/modules/analytics/hooks/socket/useAnalyticsSoket";
 
 export default function ProjectDetailsPage() {
   const { isLoaded } = useAuth();
@@ -18,13 +20,14 @@ export default function ProjectDetailsPage() {
   const params = useParams();
   const queryClient = useQueryClient();
   const projectId = params?.projectId as string;
-
   const [dateRange, setDateRange] = useState({
     label: "Last 7 Days",
-    startDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+    startDate: subDays(new Date(), 7).toISOString(),
     endDate: new Date().toISOString(),
   });
   const { data: project, isLoading: projectLoading } = useProject(projectId);
+  // enable Socket and execute__
+  useAnalyticsSoket(projectId, project?.public_key, dateRange);
   const { data: overview, isLoading: overviewLoading } = useAnalytics.overview(
     projectId,
     dateRange,
@@ -41,56 +44,23 @@ export default function ProjectDetailsPage() {
     if (isLoaded && !projectLoading && !project) {
       router.push("/dashboard");
     }
-    // just for tesing purpose, later i will delete that
-    console.log("socket running");
-    const socket: Socket = io("http://localhost:5000");
-    socket.on("connect", () => {
-      socket.emit("join-project", {
-        projectKey: project?.public_key,
-        startDate: dateRange?.startDate,
-        endDate: dateRange.endDate,
-        label: dateRange.label,
-      });
-      socket.on(
-        "update-overview",
-        (overview: {
-          totalEvents: number;
-          totalPageviews: number;
-          uniqueVisitors: number;
-        }) => {
-          console.table({
-            totalEvents: overview.totalEvents,
-            totalPageviews: overview.totalPageviews,
-            uniqueVisitors: overview.uniqueVisitors,
-          });
-          queryClient.setQueryData(
-            ["overview", projectId, dateRange],
-            overview,
-          );
-        },
-      );
-    });
-    return () => {
-      console.log("cleaning up socket");
-      socket.disconnect();
-    };
-  }, [isLoaded, projectLoading, project, router,dateRange]);
+  }, [isLoaded, projectLoading, project, router]);
 
   const handleRefresh = async () => {
     try {
       setRefreshing(true);
-      
+
       const now = new Date();
-      let startDiffMs = 7 * 24 * 60 * 60 * 1000; // default to 7 days
+      let startDateStr = subDays(now, 7).toISOString();
       if (dateRange.label === "Last 24 Hours") {
-        startDiffMs = 24 * 60 * 60 * 1000;
+        startDateStr = subHours(now, 24).toISOString();
       } else if (dateRange.label === "Last 30 Days") {
-        startDiffMs = 30 * 24 * 60 * 60 * 1000;
+        startDateStr = subDays(now, 30).toISOString();
       }
-      
+
       setDateRange({
         label: dateRange.label,
-        startDate: new Date(now.getTime() - startDiffMs).toISOString(),
+        startDate: startDateStr,
         endDate: now.toISOString(),
       });
 

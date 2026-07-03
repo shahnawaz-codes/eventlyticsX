@@ -30,8 +30,16 @@ export const getProjectByIdService = async (
 };
 
 export const deleteProjectService = async (
-  userId: string,
   projectId: string,
+  userId: string,
 ) => {
   return await project.delete(projectId, userId);
+};
+
+export const updateProjectService = async (
+  projectId: string,
+  userId: string,
+  name: string,
+) => {
+  return await project.update(projectId, userId, name);
 };

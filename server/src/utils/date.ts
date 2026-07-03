@@ -1,3 +1,5 @@
+import { parseISO, isValid } from "date-fns";
+
 // Helper to construct date filters dynamically
 export const getDateFilter = (startDate?: Date, endDate?: Date) => {
   if (!startDate && !endDate) return undefined;
@@ -13,15 +15,16 @@ export const getDateFilter = (startDate?: Date, endDate?: Date) => {
 
 // Helper to extract and validate date query parameters
 export const parseDateParams = (startDateStr: any, endDateStr: any) => {
-  const startDate = startDateStr ? new Date(startDateStr as string) : undefined;
-  const endDate = endDateStr ? new Date(endDateStr as string) : undefined;
+  const startDate = startDateStr ? parseISO(startDateStr as string) : undefined;
+  const endDate = endDateStr ? parseISO(endDateStr as string) : undefined;
 
-  if (startDate && isNaN(startDate.getTime())) {
+  if (startDate && !isValid(startDate)) {
     throw new Error("Invalid startDate format");
   }
-  if (endDate && isNaN(endDate.getTime())) {
+  if (endDate && !isValid(endDate)) {
     throw new Error("Invalid endDate format");
   }
 
   return { startDate, endDate };
 };
+

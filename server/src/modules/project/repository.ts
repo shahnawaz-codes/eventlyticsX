@@ -17,6 +17,18 @@ const project = {
     });
   },
 
+  update: async (id: string, userId: string, name: string) => {
+    return await prisma.project.update({
+      where: {
+        id,
+        userId,
+      },
+      data: {
+        name,
+      },
+    });
+  },
+
   getProject: async (projectId: string, userId: string) => {
     return await prisma.project.findFirst({
       where: {

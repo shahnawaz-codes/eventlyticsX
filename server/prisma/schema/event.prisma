@@ -10,5 +10,7 @@ model Event {
   os         String
   device     String
   country    String
+  city       String?
+  region     String?
   createdAt  DateTime @default(now())
 }

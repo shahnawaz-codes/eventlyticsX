@@ -10,6 +10,8 @@ interface TrackEventInput {
   device?: string;
   country?: string;
   os?: string;
+  city?: string;
+  region?: string;
 }
 
 export const trackEventService = async (input: TrackEventInput) => {
@@ -32,6 +34,8 @@ export const trackEventService = async (input: TrackEventInput) => {
       os: input.os || "unknown",
       device: input.device || "desktop",
       country: input.country || "unknown",
+      city: input.city || null,
+      region: input.region || null,
     },
   });
   return newEvent;

@@ -5,6 +5,7 @@ import {
   getProjectsService,
   getProjectByIdService,
   deleteProjectService,
+  updateProjectService,
 } from "./service.js";
 
 export const createProject = async (
@@ -78,5 +79,32 @@ export const deleteProject = async (
       req.user?.id as string,
     );
     res.json({ message: "successfully deleted" });
-  } catch (error) {}
+  } catch (error) {
+    console.error("Error deleting project:", error);
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+};
+
+export const updateProject = async (
+  req: AuthenticatedRequest,
+  res: Response,
+) => {
+  try {
+    const { projectId } = req.params;
+    const { projectName } = req.body;
+    if (!projectName) {
+      return res
+        .status(400)
+        .json({ success: false, message: "project name is required" });
+    }
+    const project = await updateProjectService(
+      projectId as string,
+      req.user?.id as string,
+      projectName,
+    );
+    res.status(200).json({ data: project });
+  } catch (error) {
+    console.error("Error updating project:", error);
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
 };

@@ -1,3 +1,5 @@
+import { differenceInMinutes } from "date-fns";
+
 interface RealtimeCountry {
   country: string;
   activeUsers: number;
@@ -40,10 +42,9 @@ export function useRealtimeCard({
     for (let i = 0; i < 30; i++) {
       minutesMap.set(i, 0);
     }
-    const now = Date.now();
+    const now = new Date();
     recentLogs.forEach((log: any) => {
-      const diffMs = now - new Date(log.createdAt).getTime();
-      const diffMins = Math.floor(diffMs / (1000 * 60));
+      const diffMins = differenceInMinutes(now, new Date(log.createdAt));
       if (diffMins >= 0 && diffMins < 30) {
         minutesMap.set(diffMins, (minutesMap.get(diffMins) || 0) + 1);
       }

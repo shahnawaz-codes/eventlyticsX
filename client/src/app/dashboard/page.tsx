@@ -15,8 +15,16 @@ import {
   AlertCircle,
   Copy,
   Check,
+  MoreVertical,
+  Edit3,
+  Trash2,
+  Loader2,
 } from "lucide-react";
-import { useCreateProject } from "@/modules/project/hooks/mutation";
+import {
+  useCreateProject,
+  useDeleteProject,
+  useUpdateProject,
+} from "@/modules/project/hooks/mutation";
 import { useProjects } from "@/modules/project/hooks/query";
 import { io, Socket } from "socket.io-client";
 
@@ -45,7 +53,49 @@ export default function DashboardPage() {
   const { data: projects, isLoading: projectsLoading } = useProjects();
   const [newProjectName, setNewProjectName] = useState("");
 
- 
+  // Dropdown & Modal States
+  const [activeMenuProjectId, setActiveMenuProjectId] = useState<string | null>(
+    null,
+  );
+  const [editingProject, setEditingProject] = useState<Project | null>(null);
+  const [editProjectName, setEditProjectName] = useState("");
+  const [deletingProject, setDeletingProject] = useState<Project | null>(null);
+  const [deleteConfirmationText, setDeleteConfirmationText] = useState("");
+
+  // Mutation hooks
+  const { mutateAsync: deleteProject, isPending: isDeleting } =
+    useDeleteProject();
+  const { mutateAsync: updateProject, isPending: isUpdating } =
+    useUpdateProject();
+
+  const handleDeleteProject = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!deletingProject) return;
+    if (deleteConfirmationText !== deletingProject.name) return;
+    try {
+      await deleteProject(deletingProject.id);
+      setDeletingProject(null);
+      setDeleteConfirmationText("");
+    } catch (err) {
+      console.error("Error deleting project:", err);
+    }
+  };
+
+  const handleEditProject = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingProject || !editProjectName.trim()) return;
+    try {
+      await updateProject({
+        projectId: editingProject.id,
+        projectName: editProjectName.trim(),
+      });
+      setEditingProject(null);
+      setEditProjectName("");
+    } catch (err) {
+      console.error("Error updating project:", err);
+    }
+  };
+
   const handleCreateProject = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newProjectName.trim()) return;
@@ -211,7 +261,7 @@ export default function DashboardPage() {
                           </div>
                         </div>
 
-                        <div className="self-end sm:self-center">
+                        <div className="self-end sm:self-center flex items-center gap-2">
                           <a
                             href={`/dashboard/project/${project.id}`}
                             className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-blue-50 border border-blue-150 px-3.5 py-2 text-xs font-semibold text-blue-700 hover:bg-blue-600 hover:text-white transition-all select-none"
@@ -219,6 +269,65 @@ export default function DashboardPage() {
                             <span>Go to Project</span>
                             <ChevronRight className="h-3.5 w-3.5" />
                           </a>
+
+                          <div className="relative">
+                            <button
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setActiveMenuProjectId(
+                                  activeMenuProjectId === project.id
+                                    ? null
+                                    : project.id,
+                                );
+                              }}
+                              className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-500 hover:bg-zinc-50 hover:text-zinc-800 transition-all select-none focus:outline-none cursor-pointer"
+                              title="Project Actions"
+                            >
+                              <MoreVertical className="h-4 w-4" />
+                            </button>
+
+                            {activeMenuProjectId === project.id && (
+                              <>
+                                <div
+                                  className="fixed inset-0 z-10"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    setActiveMenuProjectId(null);
+                                  }}
+                                />
+                                <div className="absolute right-0 mt-1.5 w-36 rounded-xl border border-zinc-200 bg-white p-1 shadow-lg z-20 animate-in fade-in slide-in-from-top-1 duration-100">
+                                  <button
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      setActiveMenuProjectId(null);
+                                      setEditingProject(project);
+                                      setEditProjectName(project.name);
+                                    }}
+                                    className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs font-medium text-zinc-700 hover:bg-zinc-50 cursor-pointer"
+                                  >
+                                    <Edit3 className="h-3.5 w-3.5 text-zinc-400" />
+                                    Edit Name
+                                  </button>
+                                  <button
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      setActiveMenuProjectId(null);
+                                      setDeletingProject(project);
+                                      setDeleteConfirmationText("");
+                                    }}
+                                    className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs font-medium text-red-650 hover:bg-red-50 cursor-pointer"
+                                  >
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                    Delete
+                                  </button>
+                                </div>
+                              </>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -278,6 +387,157 @@ export default function DashboardPage() {
           </div>
         </div>
       </main>
+
+      {/* Edit Project Name Modal */}
+      {editingProject && (
+        <div className="fixed inset-0 z-55 flex items-center justify-center">
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 bg-zinc-950/45 backdrop-blur-sm transition-opacity duration-300"
+            onClick={() => setEditingProject(null)}
+          />
+
+          {/* Modal Container */}
+          <div className="relative z-10 w-full max-w-md scale-100 rounded-2xl border border-zinc-150 bg-white p-6 shadow-2xl transition-all animate-in fade-in zoom-in-95 duration-200">
+            <h3 className="text-lg font-bold text-zinc-950 flex items-center gap-2 mb-2">
+              <Edit3 className="h-5 w-5 text-blue-600" />
+              Edit Project Name
+            </h3>
+            <p className="text-xs text-zinc-500 mb-6 leading-relaxed">
+              Change the display name of your project. This will not change your
+              public tracking key.
+            </p>
+
+            <form onSubmit={handleEditProject} className="space-y-5">
+              <div className="space-y-2">
+                <label
+                  htmlFor="editProjectName"
+                  className="text-xs font-bold text-zinc-700 uppercase tracking-wider"
+                >
+                  Project Name
+                </label>
+                <input
+                  type="text"
+                  id="editProjectName"
+                  required
+                  placeholder="e.g. My Updated Site"
+                  value={editProjectName}
+                  onChange={(e) => setEditProjectName(e.target.value)}
+                  className="w-full rounded-xl border border-zinc-200 bg-white px-3.5 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-blue-500 focus:outline-none transition-colors"
+                  autoFocus
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setEditingProject(null)}
+                  className="inline-flex items-center justify-center rounded-xl border border-zinc-200 bg-white hover:bg-zinc-50 px-4 py-2.5 text-sm font-semibold text-zinc-700 transition-all select-none cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={
+                    isUpdating ||
+                    !editProjectName.trim() ||
+                    editProjectName.trim() === editingProject.name
+                  }
+                  className="inline-flex items-center justify-center rounded-xl bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white px-4 py-2.5 text-sm font-semibold shadow-md shadow-blue-500/10 transition-all select-none cursor-pointer"
+                >
+                  {isUpdating ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin mr-1.5" />
+                      <span>Saving...</span>
+                    </>
+                  ) : (
+                    <span>Save Changes</span>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Project Modal */}
+      {deletingProject && (
+        <div className="fixed inset-0 z-55 flex items-center justify-center">
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 bg-zinc-950/45 backdrop-blur-sm transition-opacity duration-300"
+            onClick={() => setDeletingProject(null)}
+          />
+
+          {/* Modal Container */}
+          <div className="relative z-10 w-full max-w-md scale-100 rounded-2xl border border-red-100 bg-white p-6 shadow-2xl transition-all animate-in fade-in zoom-in-95 duration-200">
+            <h3 className="text-lg font-bold text-red-650 flex items-center gap-2 mb-2">
+              <AlertCircle className="h-5 w-5 text-red-650" />
+              Delete Project?
+            </h3>
+            <p className="text-xs text-zinc-500 mb-4 leading-relaxed">
+              Are you absolutely sure you want to delete{" "}
+              <span className="font-semibold text-zinc-800">
+                "{deletingProject.name}"
+              </span>
+              ? This action is permanent and will delete all analytics data,
+              events, and API configurations. This cannot be undone.
+            </p>
+
+            <form onSubmit={handleDeleteProject} className="space-y-4">
+              <div className="space-y-2">
+                <label
+                  htmlFor="deleteConfirm"
+                  className="text-xs font-medium text-zinc-650 leading-relaxed block"
+                >
+                  To confirm, type{" "}
+                  <span className="font-mono bg-red-50 text-red-700 px-1.5 py-0.5 rounded font-semibold text-[11px] select-all">
+                    {deletingProject.name}
+                  </span>{" "}
+                  below:
+                </label>
+                <input
+                  type="text"
+                  id="deleteConfirm"
+                  required
+                  placeholder="Type project name exactly"
+                  value={deleteConfirmationText}
+                  onChange={(e) => setDeleteConfirmationText(e.target.value)}
+                  className="w-full rounded-xl border border-zinc-200 bg-white px-3.5 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-red-500 focus:outline-none transition-colors"
+                  autoFocus
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setDeletingProject(null)}
+                  className="inline-flex items-center justify-center rounded-xl border border-zinc-200 bg-white hover:bg-zinc-50 px-4 py-2.5 text-sm font-semibold text-zinc-700 transition-all select-none cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={
+                    isDeleting ||
+                    deleteConfirmationText !== deletingProject.name
+                  }
+                  className="inline-flex items-center justify-center rounded-xl bg-red-600 hover:bg-red-700 disabled:bg-red-200 text-white px-4 py-2.5 text-sm font-semibold shadow-md shadow-red-500/10 transition-all select-none cursor-pointer"
+                >
+                  {isDeleting ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin mr-1.5" />
+                      <span>Deleting...</span>
+                    </>
+                  ) : (
+                    <span>Delete Project</span>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

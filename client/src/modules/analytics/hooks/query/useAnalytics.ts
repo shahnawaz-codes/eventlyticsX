@@ -1,5 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
-import { getBreakdowns, getOverview, getRealtime, getTimeseries } from "../services/analytics";
+import {
+  getBreakdowns,
+  getOverview,
+  getRealtime,
+  getTimeseries,
+} from "../../services/analytics";
 
 type DateRange = {
   startDate: string;

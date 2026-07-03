@@ -1,6 +1,7 @@
 "use client";
 
 import { useAnalyticsDashboard } from "../hooks/useAnalyticsDashboard";
+import { format } from "date-fns";
 import {
   Sparkles,
   Calendar,
@@ -16,9 +17,7 @@ import DashboardHeader from "./DashboardHeader";
 import DashboardSidebar from "./DashboardSidebar";
 import ReportsSnapshotCard from "./ReportsSnapshotCard";
 import RealtimeCard from "./RealtimeCard";
-import RecentlyAccessed from "./RecentlyAccessed";
-import SuggestedForYou from "./SuggestedForYou";
-import LearningChallenges from "./LearningChallenges";
+import BreakdownsGrid from "./BreakdownsGrid";
 import OverviewCards from "./OverviewCards";
 
 interface EventItem {
@@ -62,6 +61,7 @@ interface GoogleAnalyticsDashboardProps {
   onRefresh?: () => void;
   isLoading?: boolean;
 }
+
 
 export default function AnalyticsDashboard({
   project,
@@ -138,14 +138,8 @@ export default function AnalyticsDashboard({
                 </div>
               </div>
 
-              {/* Row 2: Recently Accessed History Cards */}
-              <RecentlyAccessed />
-
-              {/* Row 3: Suggested Metrics breakdown widget grids */}
-              <SuggestedForYou breakdowns={breakdowns} isLoading={isLoading} />
-
-              {/* Row 4: Developer Challenge Center Onboarding checklists */}
-              <LearningChallenges />
+              {/* Row 2: Analytics Breakdowns Grid */}
+              <BreakdownsGrid breakdowns={breakdowns} isLoading={isLoading} />
             </>
           )}
 
@@ -227,7 +221,7 @@ export default function AnalyticsDashboard({
                                 {evt.sessionId.slice(0, 15)}...
                               </td>
                               <td className="py-3 px-3 text-right text-zinc-400 font-mono text-[10px]">
-                                {new Date(evt.createdAt).toLocaleTimeString()}
+                                {format(new Date(evt.createdAt), "hh:mm:ss a")}
                               </td>
                             </tr>
                           ))
