@@ -26,3 +26,5 @@ yarn-error.log*
 *.pem
 *.tsbuildinfo
 flow.MD
+
+sdk-test
