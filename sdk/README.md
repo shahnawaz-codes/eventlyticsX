@@ -36,16 +36,16 @@ yarn add eventlytics-browser
 ## Quick Start
 
 ### 1. Initialize the SDK
-Configure and instantiate the SDK with your backend endpoint and public project key, then call `.init()` to set up automated browser event tracking:
+Configure and instantiate the SDK by passing a configuration object to the `Analytics` constructor, then call `.init()` to set up automated browser event tracking:
 
 ```javascript
 import { Analytics } from "eventlytics-browser";
 
 // Instantiate the SDK
-const analytics = new Analytics(
-  "https://your-analytics-domain.com/api/track", // Backend tracking endpoint
-  "evX_your-public-project-key"                 // Public project key
-);
+const analytics = new Analytics({
+  endpoint: "https://your-analytics-domain.com/api/track", // Optional backend tracking endpoint
+  projectKey: "evX_your-public-project-key"                 // Public project key (Required)
+});
 
 // Start auto-tracking page-views, clicks, and exits
 analytics.init();
@@ -83,10 +83,10 @@ To avoid circular dependencies, it is recommended to create a dedicated configur
 import { Analytics } from "eventlytics-browser";
 
 // Create the singleton instance
-export const analytics = new Analytics(
-  "http://localhost:5000/api/track",
-  "evX_your-project-key-here"
-);
+export const analytics = new Analytics({
+  endpoint: "http://localhost:5000/api/track",
+  projectKey: "evX_your-project-key-here"
+});
 ```
 
 ### Step 2: Initialize in Entry Point (`src/main.tsx`)
@@ -124,11 +124,12 @@ export function MyButton() {
 
 ## API Reference
 
-### `new Analytics(endPoint, projectKey)`
+### `new Analytics(config)`
 Creates a new client instance.
 
-* **`endPoint`** (`string`): The destination URL where events will be posted.
-* **`projectKey`** (`string`): Your public Eventlytics project identifier.
+* **`config`** (`AnalyticsConfig`): Object containing client options.
+  * **`projectKey`** (`string`, Required): Your public Eventlytics project identifier.
+  * **`endpoint`** (`string`, Optional): The destination URL where events will be posted. Defaults to `"http://localhost:5000/api/track"`.
 
 ### `analytics.init()`
 Sets up the automatic DOM tracking listeners. Call this once at your application's startup.

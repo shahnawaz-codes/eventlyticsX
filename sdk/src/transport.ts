@@ -1,13 +1,13 @@
 export type SendCallback = (eventName: string, data?: Record<string, any>) => void;
 
 export function sendEvent(
-  endPoint: string,
+  endpoint: string,
   projectKey: string,
   sessionId: string,
   eventName: string,
   data: Record<string, any> = {}
 ) {
-  if (!endPoint || !projectKey) return;
+  if (!endpoint || !projectKey) return;
   const payload = JSON.stringify({
     event: eventName,
     projectKey,
@@ -20,9 +20,9 @@ export function sendEvent(
 
   if (eventName === "page-exit") {
     const blob = new Blob([payload], { type: "application/json" });
-    navigator.sendBeacon(endPoint, blob);
+    navigator.sendBeacon(endpoint, blob);
   } else {
-    fetch(endPoint, {
+    fetch(endpoint, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: payload,
