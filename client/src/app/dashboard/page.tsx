@@ -194,10 +194,11 @@ export default function DashboardPage() {
                   {projects?.length}
                 </span>
               </h2>
-              {projectsLoading ? (
+            </div>
+            {projectsLoading ? (
                 // Loading Skeleton
                 <div className="space-y-3">
-                  {[1, 2].map((i) => (
+                {[1, 2].map((i) => (
                     <div
                       key={i}
                       className="h-32 w-full animate-pulse bg-white rounded-2xl border border-zinc-200/60"
@@ -334,7 +335,6 @@ export default function DashboardPage() {
                   ))}
                 </div>
               )}
-            </div>
           </div>
           {/* Create Project Panel (4 cols) */}
           <div className="lg:col-span-4 rounded-2xl border border-zinc-200/80 bg-white p-6 shadow-sm">
