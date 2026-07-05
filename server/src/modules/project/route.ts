@@ -5,6 +5,7 @@ import {
   getProjectDetail,
   deleteProject,
   updateProject,
+  verifyProject,
 } from "./controller.js";
 import { protectedRoute } from "../../middleware/auth.js";
 
@@ -16,5 +17,6 @@ route.get("/", protectedRoute, getProjects);
 route.get("/:projectId", protectedRoute, getProjectDetail);
 route.delete("/:projectId", protectedRoute, deleteProject);
 route.put("/:projectId", protectedRoute, updateProject);
+route.post("/:projectId/sdk-verification", protectedRoute, verifyProject);
 
 export default route;

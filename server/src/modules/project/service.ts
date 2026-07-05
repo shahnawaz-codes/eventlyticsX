@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { prisma } from "../../config/db.js";
-import project from "./repository.js";
+import projectRepo from "./repository.js";
 
 export const createProjectService = async (
   projectName: string,
@@ -19,21 +19,21 @@ export const createProjectService = async (
 
 export const getProjectsService = async (userId: string) => {
   // Returns project details
-  return await project.getProjects(userId);
+  return await projectRepo.getProjects(userId);
 };
 
 export const getProjectByIdService = async (
   projectId: string,
   userId: string,
 ) => {
-  return await project.getProject(projectId, userId);
+  return await projectRepo.getProject(projectId, userId);
 };
 
 export const deleteProjectService = async (
   projectId: string,
   userId: string,
 ) => {
-  return await project.delete(projectId, userId);
+  return await projectRepo.delete(projectId, userId);
 };
 
 export const updateProjectService = async (
@@ -41,5 +41,12 @@ export const updateProjectService = async (
   userId: string,
   name: string,
 ) => {
-  return await project.update(projectId, userId, name);
+  return await projectRepo.update(projectId, userId, name);
+};
+export const verifyProjectService = async (
+  projectId: string,
+  userId: string,
+) => {
+  const project = await projectRepo.getProject(projectId, userId);
+  return project?.verified || false;
 };

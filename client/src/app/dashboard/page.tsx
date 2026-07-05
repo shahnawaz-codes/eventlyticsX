@@ -33,6 +33,7 @@ interface Project {
   name: string;
   public_key: string;
   userId: string;
+  verified: boolean;
 }
 
 export default function DashboardPage() {
@@ -236,6 +237,17 @@ export default function DashboardPage() {
                             <h3 className="font-bold text-zinc-900 group-hover:text-blue-600 transition-colors">
                               {project.name}
                             </h3>
+                            {project.verified ? (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-250 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 select-none">
+                                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                Verified
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-red-50 border border-red-250 px-2 py-0.5 text-[10px] font-semibold text-red-700 select-none">
+                                <span className="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse" />
+                                Not Verified
+                              </span>
+                            )}
                           </div>
 
                           {/* Public Key Display */}

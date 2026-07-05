@@ -23,6 +23,13 @@ export const trackEventService = async (input: TrackEventInput) => {
     throw new Error(`Project with key ${projectKey} not found`);
   }
 
+  if (!project.verified) {
+    await prisma.project.update({
+      where: { id: project.id },
+      data: { verified: true },
+    });
+  }
+
   const newEvent = await prisma.event.create({
     data: {
       eventType: input.event || "pageview",
@@ -38,5 +45,6 @@ export const trackEventService = async (input: TrackEventInput) => {
       region: input.region || null,
     },
   });
+  
   return newEvent;
 };

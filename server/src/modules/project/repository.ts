@@ -1,6 +1,6 @@
 import { prisma } from "../../config/db.js";
 
-const project = {
+const projectRepo = {
   getProjects: async (userId: string) => {
     return await prisma.project.findMany({
       where: {
@@ -39,4 +39,4 @@ const project = {
   },
 };
 
-export default project;
+export default projectRepo;

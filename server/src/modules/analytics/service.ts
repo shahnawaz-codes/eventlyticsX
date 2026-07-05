@@ -46,7 +46,6 @@ export const getRealtimeService = async (projectId: string, userId: string) => {
   if (!project) {
     throw new Error("Project not found or unauthorized");
   }
-
   const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
   const activeUsers = await eventRepo.uniqueVisitorCount(
     project.public_key,
@@ -89,11 +88,12 @@ export const getBreakdownsService = async (
     startDate,
     endDate,
   );
-  const { devices, countries, cities, regions } = await eventRepo.groupByDeviceAndCountry(
-    project.public_key,
-    startDate,
-    endDate,
-  );
+  const { devices, countries, cities, regions } =
+    await eventRepo.groupByDeviceAndCountry(
+      project.public_key,
+      startDate,
+      endDate,
+    );
   const { entryPages, exitPages } = await eventRepo.getEntryExitPages(
     project.public_key,
     startDate,
@@ -110,11 +110,31 @@ export const getBreakdownsService = async (
   referrers.forEach((ref) => {
     let channel = "Referral";
     const r = ref.referrer ? ref.referrer.toLowerCase() : "";
-    if (r === "direct" || r === "" || !r || r === "none" || r === "direct / none") {
+    if (
+      r === "direct" ||
+      r === "" ||
+      !r ||
+      r === "none" ||
+      r === "direct / none"
+    ) {
       channel = "Direct / None";
-    } else if (r.includes("google") || r.includes("bing") || r.includes("yahoo") || r.includes("duckduckgo") || r.includes("baidu")) {
+    } else if (
+      r.includes("google") ||
+      r.includes("bing") ||
+      r.includes("yahoo") ||
+      r.includes("duckduckgo") ||
+      r.includes("baidu")
+    ) {
       channel = "Organic Search";
-    } else if (r.includes("facebook") || r.includes("twitter") || r.includes("t.co") || r.includes("instagram") || r.includes("linkedin") || r.includes("reddit") || r.includes("youtube")) {
+    } else if (
+      r.includes("facebook") ||
+      r.includes("twitter") ||
+      r.includes("t.co") ||
+      r.includes("instagram") ||
+      r.includes("linkedin") ||
+      r.includes("reddit") ||
+      r.includes("youtube")
+    ) {
       channel = "Organic Social";
     }
     channelMap.set(channel, (channelMap.get(channel) || 0) + ref.count);

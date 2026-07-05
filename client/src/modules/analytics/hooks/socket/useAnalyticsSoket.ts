@@ -56,12 +56,17 @@ export const useAnalyticsSoket = (
       console.table(trend);
       queryClient.setQueryData(["timeSeries", projectId, dateRange], trend);
     });
+    socket.on("project:verified", () => {
+      console.log("Project verified in real-time!");
+      queryClient.invalidateQueries({ queryKey: ["project", projectId] });
+    });
     return () => {
       console.log("cleaning up socket");
       socket.off("analytics:overview");
       socket.off("analytics:breakdowns");
       socket.off("analytics:realtime");
       socket.off("analytics:timeseries");
+      socket.off("project:verified");
       socket.disconnect();
     };
   }, [projectId, projectKey, dateRange]);

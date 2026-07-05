@@ -168,6 +168,9 @@ const emitEvent = (projectKey: string) => {
         socket.emit("analytics:timeseries", trend);
       }
     },
+    emit_verified: async () => {
+      io.to(`dashboard:${projectKey}`).emit("project:verified", { verified: true });
+    },
   };
 };
 

@@ -6,6 +6,7 @@ import {
   getProjectByIdService,
   deleteProjectService,
   updateProjectService,
+  verifyProjectService,
 } from "./service.js";
 
 export const createProject = async (
@@ -105,6 +106,23 @@ export const updateProject = async (
     res.status(200).json({ data: project });
   } catch (error) {
     console.error("Error updating project:", error);
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+};
+
+export const verifyProject = async (
+  req: AuthenticatedRequest,
+  res: Response,
+) => {
+  try {
+    const { projectId } = req.params;
+    const verified = await verifyProjectService(
+      projectId as string,
+      req.user?.id as string,
+    );
+    res.json({ verified });
+  } catch (error) {
+    console.error("Error verifying project:", error);
     res.status(500).json({ success: false, message: "Internal server error" });
   }
 };

@@ -3,4 +3,5 @@ export type Project = {
   name: string;
   public_key: string;
   userId: string;
+  verified: boolean;
 };

@@ -59,6 +59,7 @@ export const tracking = async (req: Request, res: Response) => {
     await emit.emit_breakdowns();
     await emit.emit_realtime();
     await emit.emit_timeseries();
+    await emit.emit_verified();
     console.log("✅ Event tracked:", newEvent);
     res.status(200).json({ success: true });
   } catch (error) {
