@@ -18,7 +18,7 @@ export const useAnalyticsSoket = (
     // emit projectKey and label__
     socket.emit("join-project", {
       projectKey,
-      label: dateRange?.label,
+      dateLabel: dateRange?.label,
     });
     socket.on(
       "analytics:overview",
@@ -35,13 +35,13 @@ export const useAnalyticsSoket = (
         queryClient.setQueryData(["overview", projectId, dateRange], overview);
       },
     );
-    socket.on(
-      "analytics:breakdowns",
-      (breakdownData) => {
-        console.log("analytics:breakdowns socket received:", breakdownData);
-        queryClient.setQueryData(["breakdowns", projectId, dateRange], breakdownData);
-      },
-    );
+    socket.on("analytics:breakdowns", (breakdownData) => {
+      console.log("analytics:breakdowns socket received:", breakdownData);
+      queryClient.setQueryData(
+        ["breakdowns", projectId, dateRange],
+        breakdownData,
+      );
+    });
     socket.on("analytics:realtime", ({ activeUsers, recentActivity }) => {
       console.table({
         activeUsers,

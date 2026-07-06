@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { useProjects } from "@/modules/project/hooks/query";
 import { useCreateProject } from "@/modules/project/hooks/mutation";
+import { toast } from "sonner";
 
 interface Project {
   id: string;
@@ -80,14 +81,16 @@ function DocsContent() {
 
   const handleCreateProject = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newProjectName.trim()) return;
+    const projectNameToCreate = newProjectName.trim();
+    if (!projectNameToCreate) return;
 
     try {
       setModalError(null);
-      const newProj = await createProject(newProjectName);
+      const newProj = await createProject(projectNameToCreate);
 
       if (newProj && newProj.id) {
         setSelectedProjectId(newProj.id);
+        toast.success(`Project "${projectNameToCreate}" created successfully!`);
       }
 
       // Clean up modal
@@ -96,12 +99,14 @@ function DocsContent() {
     } catch (err: any) {
       console.error("Error creating project in docs:", err);
       setModalError(err.message || "An unexpected error occurred.");
+      toast.error(err.message || "Failed to create project");
     }
   };
 
   const handleCopyCode = (code: string, index: number) => {
     navigator.clipboard.writeText(code);
     setCopiedIndex(index);
+    toast.success("Snippet copied to clipboard!");
     setTimeout(() => setCopiedIndex(null), 2000);
   };
 

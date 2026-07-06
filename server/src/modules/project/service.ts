@@ -43,10 +43,3 @@ export const updateProjectService = async (
 ) => {
   return await projectRepo.update(projectId, userId, name);
 };
-export const verifyProjectService = async (
-  projectId: string,
-  userId: string,
-) => {
-  const project = await projectRepo.getProject(projectId, userId);
-  return project?.verified || false;
-};

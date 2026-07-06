@@ -20,6 +20,7 @@ import { useAnalytics } from "@/modules/analytics/hooks/query/useAnalytics";
 import { useQueryClient } from "@tanstack/react-query";
 import AnalyticsDashboard from "@/modules/analytics/components/AnalyticsDashboard";
 import { useAnalyticsSoket } from "@/modules/analytics/hooks/socket/useAnalyticsSoket";
+import { toast } from "sonner";
 
 function SDKSetupWizard({
   project,
@@ -37,6 +38,7 @@ function SDKSetupWizard({
   const handleCopyCmd = () => {
     navigator.clipboard.writeText("npm install eventlytics-browser");
     setCopiedCmd(true);
+    toast.success("Install command copied to clipboard!");
     setTimeout(() => setCopiedCmd(false), 2000);
   };
 
@@ -53,12 +55,19 @@ analytics.init();`;
   const handleCopyCode = () => {
     navigator.clipboard.writeText(codeSnippet);
     setCopiedCode(true);
+    toast.success("Initialization snippet copied to clipboard!");
     setTimeout(() => setCopiedCode(false), 2000);
   };
 
   const triggerManualCheck = async () => {
     setChecking(true);
-    await onManualCheck();
+    const checkPromise = onManualCheck();
+    toast.promise(checkPromise, {
+      loading: "Checking integration status...",
+      success: "Status checked. Waiting for tracking events...",
+      error: "Failed to check status",
+    });
+    await checkPromise;
     setTimeout(() => setChecking(false), 800);
   };
 
@@ -266,12 +275,27 @@ export default function ProjectDetailsPage() {
   const { data: realtime, isLoading: realtimeLoading } =
     useAnalytics.getRealtime(projectId, { refetchInterval: 5000 });
   const [refreshing, setRefreshing] = useState(false);
+  const [wasUnverified, setWasUnverified] = useState(false);
+
   // Redirect to dashboard if project load completes but project is null
   useEffect(() => {
     if (isLoaded && !projectLoading && !project) {
       router.push("/dashboard");
     }
   }, [isLoaded, projectLoading, project, router]);
+
+  useEffect(() => {
+    if (project && !project.verified) {
+      setWasUnverified(true);
+    }
+  }, [project?.verified]);
+
+  useEffect(() => {
+    if (project?.verified && wasUnverified) {
+      toast.success("SDK Integration verified successfully!");
+      setWasUnverified(false);
+    }
+  }, [project?.verified, wasUnverified]);
 
   const handleRefresh = async () => {
     try {
@@ -297,8 +321,10 @@ export default function ProjectDetailsPage() {
         queryClient.invalidateQueries({ queryKey: ["timeSeries", projectId] }),
         queryClient.invalidateQueries({ queryKey: ["realtime", projectId] }),
       ]);
+      toast.success("Analytics data refreshed!");
     } catch (err: any) {
       console.error("Error refreshing analytics:", err);
+      toast.error("Failed to refresh analytics");
     } finally {
       setRefreshing(false);
     }

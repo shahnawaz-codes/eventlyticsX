@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { useAuth, useUser, useClerk } from "@clerk/nextjs"
+import { toast } from "sonner"
 
 import {
   Activity,
@@ -168,6 +169,7 @@ export default function Home() {
   const handleCopy = () => {
     navigator.clipboard.writeText(codeString)
     setCopied(true)
+    toast.success("Code snippet copied to clipboard!")
     setTimeout(() => setCopied(false), 2000)
   }
 

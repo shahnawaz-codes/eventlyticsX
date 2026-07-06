@@ -27,6 +27,7 @@ import {
 } from "@/modules/project/hooks/mutation";
 import { useProjects } from "@/modules/project/hooks/query";
 import { io, Socket } from "socket.io-client";
+import { toast } from "sonner";
 
 interface Project {
   id: string;
@@ -75,10 +76,12 @@ export default function DashboardPage() {
     if (deleteConfirmationText !== deletingProject.name) return;
     try {
       await deleteProject(deletingProject.id);
+      toast.success(`Project "${deletingProject.name}" deleted successfully!`);
       setDeletingProject(null);
       setDeleteConfirmationText("");
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error deleting project:", err);
+      toast.error(err.message || "Failed to delete project");
     }
   };
 
@@ -90,30 +93,37 @@ export default function DashboardPage() {
         projectId: editingProject.id,
         projectName: editProjectName.trim(),
       });
+      toast.success(`Project renamed to "${editProjectName.trim()}"`);
       setEditingProject(null);
       setEditProjectName("");
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error updating project:", err);
+      toast.error(err.message || "Failed to rename project");
     }
   };
 
   const handleCreateProject = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newProjectName.trim()) return;
+    const projectNameToCreate = newProjectName.trim();
+    if (!projectNameToCreate) return;
     try {
-      const project = await createProject(newProjectName);
+      const project = await createProject(projectNameToCreate);
       setNewProjectName("");
+      toast.success(`Project "${projectNameToCreate}" created successfully!`);
       // Redirect to the newly created project's dashboard details page
       router.push(`/dashboard/project/${project.id}`);
     } catch (err: any) {
       console.error("Error creating project:", err);
+      toast.error(err.message || "Failed to create project");
     }
   };
   const handleCopyKey = (key: string, id: string) => {
     navigator.clipboard.writeText(key);
     setCopiedId(id);
+    toast.success("Public Key copied to clipboard!");
     setTimeout(() => setCopiedId(null), 2000);
   };
+
 
   if (isPending) {
     return (
