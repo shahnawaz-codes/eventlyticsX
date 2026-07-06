@@ -20,13 +20,17 @@ app.set("io", io);
 io.on("connection", (socket) => {
   console.log("hello bro", socket.id);
   // join perticular project and receive the projectId from client
-  socket.on("join-project", ({ projectKey, label }) => {
-    console.log("client:", projectKey);
+  socket.on("join-project", ({ projectKey, dateLabel }) => {
+    // leave the privious rooms if joined
+    if (socket.data.projectKey) {
+      socket.leave(`dashboard:${projectKey}:${dateLabel}`);
+      socket.leave(`dashboard:${projectKey}`);
+    }
+    socket.data.projectKey = projectKey;
+    socket.data.filters = dateLabel;
     // create seprate room for each project so that they can avoid conflict
+    socket.join(`dashboard:${projectKey}:${dateLabel}`);
     socket.join(`dashboard:${projectKey}`);
-    socket.in(`dashboard:${projectKey}`);
-    // Store the client's current date filters directly on their socket connection object!
-    socket.data.filters = { label };
   });
   socket.on("disconnect", () => {
     console.log("❌ Socket disconnected:", socket.id);
