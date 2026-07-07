@@ -66,20 +66,34 @@ export default function Home() {
   const { user } = useUser()
   const { signOut } = useClerk()
   const isPending = !isLoaded
-  // Billing cycle state
-  const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("yearly")
 
   // Timeline timeframe state
   const [timeframe, setTimeframe] = useState<"24h" | "7d" | "30d">("7d")
 
   // Code Copy state
   const [copied, setCopied] = useState(false)
-  const codeString = `<script 
-  async 
-  defer 
-  data-website-id="evt_8f2a74c9" 
+  const [activeTab, setActiveTab] = useState<"html" | "npm" | "cli">("html")
+  const [setupIsVisible, setSetupIsVisible] = useState(false)
+  const setupRef = useRef<HTMLDivElement>(null)
+
+  const htmlCode = `<script
+  async
+  defer
+  data-website-id="evt_8f2a74c9"
   src="https://cdn.eventlyticsx.com/tracker.js"
 ></script>`
+
+  const npmInstallCode = `npm install eventlytics-browser`
+  const npmUsageCode = `import { Analytics } from "eventlytics-browser"
+
+const analytics = new Analytics(
+  "https://api.eventlyticsx.com/api/track",
+  "evt_8f2a74c9"
+)
+
+analytics.init()`
+
+  const cliCode = `npx eventlytics-cli init --key=evt_8f2a74c9`
 
   // Live stream log state
   const [logs, setLogs] = useState<LogItem[]>(INITIAL_LOGS)
@@ -167,11 +181,45 @@ export default function Home() {
   }, [])
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(codeString)
+    let textToCopy = htmlCode
+    if (activeTab === "npm") {
+      textToCopy = npmInstallCode + "\n\n" + npmUsageCode
+    } else if (activeTab === "cli") {
+      textToCopy = cliCode
+    }
+    navigator.clipboard.writeText(textToCopy)
     setCopied(true)
     toast.success("Code snippet copied to clipboard!")
     setTimeout(() => setCopied(false), 2000)
   }
+
+  // Scroll visibility observer for Quick Setup section
+  useEffect(() => {
+    if (typeof window === "undefined" || !("IntersectionObserver" in window)) {
+      setSetupIsVisible(true)
+      return
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setSetupIsVisible(true)
+        }
+      },
+      { threshold: 0.15 }
+    )
+
+    const currentRef = setupRef.current
+    if (currentRef) {
+      observer.observe(currentRef)
+    }
+
+    return () => {
+      if (currentRef) {
+        observer.unobserve(currentRef)
+      }
+    }
+  }, [])
 
   const toggleFaq = (index: number) => {
     setActiveFaq(activeFaq === index ? null : index)
@@ -195,7 +243,7 @@ export default function Home() {
   return (
     <div className="flex-1 bg-white">
       {/* 1. Header/Navigation */}
-      <header className="sticky top-0 z-40 w-full border-b border-zinc-100 bg-white/80 backdrop-blur-md">
+      <header className="sticky top-0 z-40 w-full border-b border-zinc-200/40 bg-white/40 backdrop-blur-md shadow-[0_2px_8px_-3px_rgba(0,0,0,0.05)]">
         <div className="container mx-auto flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-2">
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-600 shadow-md shadow-blue-500/20">
@@ -210,7 +258,6 @@ export default function Home() {
             <a href="#features" className="transition-colors hover:text-blue-600">Features</a>
             <a href="#demo" className="transition-colors hover:text-blue-600">Interactive Demo</a>
             <a href="#setup" className="transition-colors hover:text-blue-600">Quick Start</a>
-            <a href="#pricing" className="transition-colors hover:text-blue-600">Pricing</a>
             <a href="#faq" className="transition-colors hover:text-blue-600">FAQ</a>
           </nav>
 
@@ -628,11 +675,15 @@ export default function Home() {
       </section>
 
       {/* 5. Quick Setup Section */}
-      <section id="setup" className="py-16 sm:py-24 border-t border-zinc-100 bg-zinc-50/50">
+      <section id="setup" ref={setupRef} className={`py-16 sm:py-24 border-t border-zinc-100 bg-zinc-50/50 overflow-hidden transition-all duration-1000 transform`}>
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
             {/* Context (5 cols) */}
-            <div className="lg:col-span-5 space-y-6">
+            <div 
+              className={`lg:col-span-5 space-y-6 transition-all duration-1000 transform ${
+                setupIsVisible ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-8"
+              }`}
+            >
               <div className="inline-flex items-center gap-1 rounded-full bg-blue-50 border border-blue-100 px-3 py-1 text-xs font-semibold text-blue-700">
                 <Terminal className="h-3.5 w-3.5" /> Getting Started
               </div>
@@ -640,38 +691,85 @@ export default function Home() {
                 Integrate in under five minutes
               </h2>
               <p className="text-zinc-600 leading-relaxed">
-                Say goodbye to heavy tracking dashboards and complex configurations. Simply paste the generated script into your website&apos;s header tag.
+                Choose the integration path that matches your tech stack. Embed via a lightweight HTML script tag, use our TypeScript NPM package, or run a fast CLI initializer.
               </p>
 
               <div className="space-y-3.5">
                 <div className="flex items-start gap-3">
                   <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-600 text-xs font-bold mt-0.5">1</div>
-                  <span className="text-sm text-zinc-600">Register your account and name your site workspace</span>
+                  <span className="text-sm text-zinc-650 font-medium">Register your account and create a website workspace</span>
                 </div>
                 <div className="flex items-start gap-3">
                   <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-600 text-xs font-bold mt-0.5">2</div>
-                  <span className="text-sm text-zinc-600">Copy the script tag generated on your setup screen</span>
+                  <span className="text-sm text-zinc-650 font-medium">Choose your preferred installation method and copy / run it</span>
                 </div>
                 <div className="flex items-start gap-3">
                   <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-600 text-xs font-bold mt-0.5">3</div>
-                  <span className="text-sm text-zinc-600">Start watching event stats stream in live, instantly</span>
+                  <span className="text-sm text-zinc-650 font-medium">Watch your event statistics stream in live, instantly</span>
                 </div>
               </div>
             </div>
 
             {/* Code Copy Window (7 cols) */}
-            <div className="lg:col-span-7">
+            <div 
+              className={`lg:col-span-7 transition-all duration-1000 delay-200 transform ${
+                setupIsVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
+              }`}
+            >
               <div className="rounded-xl border border-zinc-200 bg-zinc-900 shadow-xl overflow-hidden font-mono text-sm">
-                <div className="flex items-center justify-between bg-zinc-950 px-4 py-3 border-b border-zinc-800">
-                  <div className="flex items-center gap-2">
-                    <span className="h-3 w-3 rounded-full bg-zinc-700" />
-                    <span className="h-3 w-3 rounded-full bg-zinc-700" />
-                    <span className="h-3 w-3 rounded-full bg-zinc-700" />
-                    <span className="ml-1 text-[11px] font-medium text-zinc-500">layout.html</span>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between bg-zinc-950 px-4 py-3 border-b border-zinc-800 gap-3">
+                  <div className="flex items-center gap-1.5 justify-between sm:justify-start">
+                    <div className="flex items-center gap-1.5">
+                      <span className="h-2.5 w-2.5 rounded-full bg-zinc-800 animate-pulse" />
+                      <span className="h-2.5 w-2.5 rounded-full bg-zinc-800" />
+                      <span className="h-2.5 w-2.5 rounded-full bg-zinc-800" />
+                    </div>
+                    <span className="ml-2 text-[10px] text-zinc-500 font-mono">
+                      {activeTab === "html" ? "layout.html" : activeTab === "npm" ? "analytics.ts" : "terminal"}
+                    </span>
                   </div>
+
+                  {/* Tabs Segmented Control */}
+                  <div className="flex bg-zinc-900 rounded-lg p-0.5 border border-zinc-800 self-center sm:self-auto">
+                    <button
+                      onClick={() => setActiveTab("html")}
+                      className={`flex items-center gap-1.5 px-3 py-1 text-xs font-medium rounded-md transition-all cursor-pointer ${
+                        activeTab === "html"
+                          ? "bg-zinc-800 text-white shadow-sm"
+                          : "text-zinc-400 hover:text-zinc-200"
+                      }`}
+                    >
+                      <Globe className="h-3.5 w-3.5" />
+                      <span>HTML</span>
+                    </button>
+                    <button
+                      onClick={() => setActiveTab("npm")}
+                      className={`flex items-center gap-1.5 px-3 py-1 text-xs font-medium rounded-md transition-all cursor-pointer ${
+                        activeTab === "npm"
+                          ? "bg-zinc-800 text-white shadow-sm"
+                          : "text-zinc-400 hover:text-zinc-200"
+                      }`}
+                    >
+                      <Code className="h-3.5 w-3.5" />
+                      <span>NPM</span>
+                    </button>
+                    <button
+                      onClick={() => setActiveTab("cli")}
+                      className={`flex items-center gap-1.5 px-3 py-1 text-xs font-medium rounded-md transition-all cursor-pointer ${
+                        activeTab === "cli"
+                          ? "bg-zinc-800 text-white shadow-sm"
+                          : "text-zinc-400 hover:text-zinc-200"
+                      }`}
+                    >
+                      <Terminal className="h-3.5 w-3.5" />
+                      <span>CLI</span>
+                    </button>
+                  </div>
+
+                  {/* Copy Button */}
                   <button
                     onClick={handleCopy}
-                    className="flex items-center gap-1.5 rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-1.5 text-xs text-zinc-400 transition-all hover:bg-zinc-800 hover:text-white cursor-pointer"
+                    className="flex items-center justify-center gap-1.5 rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-1.5 text-xs text-zinc-400 transition-all hover:bg-zinc-800 hover:text-white cursor-pointer select-none font-sans"
                   >
                     {copied ? (
                       <>
@@ -681,173 +779,120 @@ export default function Home() {
                     ) : (
                       <>
                         <Copy className="h-3.5 w-3.5" />
-                        <span>Copy Script</span>
+                        <span>Copy Code</span>
                       </>
                     )}
                   </button>
                 </div>
-                <div className="p-6 overflow-x-auto text-zinc-300">
-                  <pre className="text-zinc-500 select-none">{`<!-- Paste inside <head> of your site -->`}</pre>
-                  <pre className="mt-2 text-blue-400">
-                    {codeString}
-                  </pre>
-                </div>
+
+                {/* Tab Contents */}
+                {activeTab === "html" && (
+                  <div className="p-6 overflow-x-auto text-zinc-300 font-mono text-xs leading-relaxed select-text min-h-[220px] flex flex-col justify-center animate-fade-in">
+                    <div className="text-zinc-500 select-none mb-3">{`<!-- Paste inside <head> of your site -->`}</div>
+                    <pre className="text-zinc-400">
+                      <span className="text-zinc-500">&lt;</span>
+                      <span className="text-blue-400">script</span>
+                      {"\n  "}
+                      <span className="text-emerald-400">async</span>
+                      {"\n  "}
+                      <span className="text-emerald-400">defer</span>
+                      {"\n  "}
+                      <span className="text-violet-400">data-website-id</span>
+                      <span className="text-zinc-500">=</span>
+                      <span className="text-amber-300">&quot;evt_8f2a74c9&quot;</span>
+                      {"\n  "}
+                      <span className="text-violet-400">src</span>
+                      <span className="text-zinc-500">=</span>
+                      <span className="text-amber-300">&quot;https://cdn.eventlyticsx.com/tracker.js&quot;</span>
+                      {"\n"}
+                      <span className="text-zinc-500">&gt;&lt;/</span>
+                      <span className="text-blue-400">script</span>
+                      <span className="text-zinc-500">&gt;</span>
+                    </pre>
+                  </div>
+                )}
+
+                {activeTab === "npm" && (
+                  <div className="p-6 overflow-x-auto text-zinc-300 font-mono text-xs leading-relaxed select-text min-h-[220px] space-y-4 animate-fade-in">
+                    <div>
+                      <div className="text-zinc-500 select-none mb-2">{`# Install via npm`}</div>
+                      <pre className="text-zinc-400 flex items-center justify-between bg-zinc-950/60 px-4 py-2.5 rounded-lg border border-zinc-800/80">
+                        <div>
+                          <span className="text-blue-400 select-none">$ </span>
+                          <span className="text-zinc-200">{npmInstallCode}</span>
+                        </div>
+                        <button 
+                          onClick={() => {
+                            navigator.clipboard.writeText(npmInstallCode);
+                            toast.success("Install command copied!");
+                          }}
+                          className="text-[10px] text-zinc-500 hover:text-zinc-300 underline cursor-pointer select-none font-sans"
+                        >
+                          Copy
+                        </button>
+                      </pre>
+                    </div>
+                    
+                    <div>
+                      <div className="text-zinc-500 select-none mb-2">{`// Initialize and start auto-tracking`}</div>
+                      <pre className="text-zinc-400">
+                        <span className="text-purple-400">import</span>{" "}
+                        <span className="text-zinc-200">{`{ Analytics }`}</span>{" "}
+                        <span className="text-purple-400">from</span>{" "}
+                        <span className="text-amber-300">&quot;eventlytics-browser&quot;</span>
+                        {"\n\n"}
+                        <span className="text-purple-400">const</span>{" "}
+                        <span className="text-zinc-200">analytics</span>{" "}
+                        <span className="text-zinc-500">=</span>{" "}
+                        <span className="text-purple-400">new</span>{" "}
+                        <span className="text-blue-400">Analytics</span>
+                        <span className="text-zinc-500">(</span>
+                        {"\n  "}
+                        <span className="text-amber-300">&quot;https://api.eventlyticsx.com/api/track&quot;</span>
+                        <span className="text-zinc-500">,</span>
+                        {"\n  "}
+                        <span className="text-amber-300">&quot;evt_8f2a74c9&quot;</span>
+                        {"\n"}
+                        <span className="text-zinc-500">)</span>
+                        {"\n\n"}
+                        <span className="text-zinc-200">analytics</span>
+                        <span className="text-zinc-500">.</span>
+                        <span className="text-blue-400">init</span>
+                        <span className="text-zinc-500">()</span>
+                      </pre>
+                    </div>
+                  </div>
+                )}
+
+                {activeTab === "cli" && (
+                  <div className="p-6 overflow-x-auto text-zinc-300 font-mono text-xs leading-relaxed select-text min-h-[220px] space-y-4 animate-fade-in">
+                    <div>
+                      <div className="text-zinc-550 select-none mb-2">{`# Run the wizard inside your project`}</div>
+                      <pre className="text-zinc-400 bg-zinc-950/60 px-4 py-3 rounded-lg border border-zinc-800/80">
+                        <span className="text-blue-400 select-none">$ </span>
+                        <span className="text-zinc-200">npx eventlytics-cli </span>
+                        <span className="text-emerald-400">init</span>{" "}
+                        <span className="text-zinc-400">--key=</span>
+                        <span className="text-amber-300">evt_8f2a74c9</span>
+                      </pre>
+                    </div>
+
+                    <div className="text-xs text-zinc-500 leading-relaxed bg-zinc-950/20 p-3.5 rounded-lg border border-zinc-800/80 select-none font-sans">
+                      <p className="font-bold text-zinc-400 mb-1">The eventlytics CLI will:</p>
+                      <ul className="list-disc pl-4 space-y-1">
+                        <li>Auto-detect React, Next.js, Astro, or Svelte project structures</li>
+                        <li>Create your shared configuration file (`eventlytics.config.ts`)</li>
+                        <li>Add standard pageview instrumentation hooks automatically</li>
+                      </ul>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* 6. Pricing Section */}
-      <section id="pricing" className="py-16 sm:py-24 border-t border-zinc-100 bg-white">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="max-w-3xl mx-auto text-center mb-12">
-            <h2 className="text-3xl font-bold tracking-tight text-zinc-950 sm:text-4xl">
-              Simple, transparent pricing
-            </h2>
-            <p className="mt-4 text-lg text-zinc-600">
-              No hidden track fees or volume overages. Grow at your own pace.
-            </p>
-
-            {/* Annual toggle */}
-            <div className="mt-8 flex items-center justify-center gap-3">
-              <span className={`text-sm font-semibold ${billingCycle === "monthly" ? "text-zinc-900" : "text-zinc-400"}`}>
-                Monthly
-              </span>
-              <button
-                onClick={() => setBillingCycle(billingCycle === "monthly" ? "yearly" : "monthly")}
-                className="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent bg-zinc-200 transition-colors duration-200 ease-in-out focus:outline-none aria-checked:bg-blue-600"
-                aria-checked={billingCycle === "yearly"}
-              >
-                <span
-                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                    billingCycle === "yearly" ? "translate-x-5" : "translate-x-0"
-                  }`}
-                />
-              </button>
-              <span className={`text-sm font-semibold ${billingCycle === "yearly" ? "text-zinc-900" : "text-zinc-400"} flex items-center gap-1.5`}>
-                Yearly
-                <span className="rounded-full bg-blue-100 px-2.5 py-0.5 text-xxs font-extrabold text-blue-700 shadow-sm">
-                  Save 20%
-                </span>
-              </span>
-            </div>
-          </div>
-
-          <div className="mx-auto max-w-5xl grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch">
-            {/* hobby Tier */}
-            <div className="rounded-2xl border border-zinc-150 bg-white p-8 flex flex-col justify-between hover:border-zinc-250 transition-all">
-              <div>
-                <h3 className="text-base font-bold text-zinc-900">Hobby</h3>
-                <p className="mt-2 text-xs text-zinc-500">Perfect for side projects & portfolios</p>
-                <div className="mt-6 flex items-baseline">
-                  <span className="text-4xl font-extrabold tracking-tight text-zinc-950">$0</span>
-                  <span className="ml-1 text-xs text-zinc-400 font-medium">/ forever</span>
-                </div>
-
-                <ul className="mt-8 space-y-3 text-xs text-zinc-600 font-medium">
-                  <li className="flex items-center gap-2">
-                    <Check className="h-4.5 w-4.5 text-blue-600 shrink-0" />
-                    <span>Up to 10k pageviews / month</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <Check className="h-4.5 w-4.5 text-blue-600 shrink-0" />
-                    <span>1 website dashboard</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <Check className="h-4.5 w-4.5 text-blue-600 shrink-0" />
-                    <span>Basic event tracking</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <Check className="h-4.5 w-4.5 text-blue-600 shrink-0" />
-                    <span>6-month stats retention</span>
-                  </li>
-                </ul>
-              </div>
-              <a href="#setup" className="mt-8 flex w-full items-center justify-center rounded-lg border border-zinc-200 bg-white py-2 text-sm font-semibold text-zinc-800 transition-all hover:bg-zinc-50">
-                Start Hobby Free
-              </a>
-            </div>
-
-            {/* Pro Tier (Popular) */}
-            <div className="relative rounded-2xl border-2 border-blue-600 bg-white p-8 flex flex-col justify-between shadow-lg shadow-blue-500/5 hover:-translate-y-0.5 transition-all">
-              <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 rounded-full bg-blue-600 px-3.5 py-1 text-2xs font-extrabold text-white uppercase tracking-wider select-none">
-                Most Popular
-              </span>
-
-              <div>
-                <h3 className="text-base font-bold text-zinc-900">Professional</h3>
-                <p className="mt-2 text-xs text-zinc-500">For growing businesses & creators</p>
-                <div className="mt-6 flex items-baseline">
-                  <span className="text-4xl font-extrabold tracking-tight text-zinc-950">
-                    {billingCycle === "yearly" ? "$15" : "$19"}
-                  </span>
-                  <span className="ml-1 text-xs text-zinc-400 font-medium">/ month</span>
-                </div>
-
-                <ul className="mt-8 space-y-3 text-xs text-zinc-600 font-medium">
-                  <li className="flex items-center gap-2">
-                    <Check className="h-4.5 w-4.5 text-blue-600 shrink-0" />
-                    <span>Up to 150k pageviews / month</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <Check className="h-4.5 w-4.5 text-blue-600 shrink-0" />
-                    <span>Unlimited websites</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <Check className="h-4.5 w-4.5 text-blue-600 shrink-0" />
-                    <span>Custom conversions & goals</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <Check className="h-4.5 w-4.5 text-blue-600 shrink-0" />
-                    <span>Unlimited data retention history</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <Check className="h-4.5 w-4.5 text-blue-600 shrink-0" />
-                    <span>Email & Slack integration alerts</span>
-                  </li>
-                </ul>
-              </div>
-              <a href="#setup" className="mt-8 flex w-full items-center justify-center rounded-lg bg-blue-600 py-2 text-sm font-bold text-white shadow-md shadow-blue-500/10 transition-all hover:bg-blue-700">
-                Start 14-day Free Trial
-              </a>
-            </div>
-
-            {/* Enterprise Tier */}
-            <div className="rounded-2xl border border-zinc-150 bg-white p-8 flex flex-col justify-between hover:border-zinc-250 transition-all">
-              <div>
-                <h3 className="text-base font-bold text-zinc-900">Scale / Custom</h3>
-                <p className="mt-2 text-xs text-zinc-500">For high traffic portals & agencies</p>
-                <div className="mt-6 flex items-baseline">
-                  <span className="text-4xl font-extrabold tracking-tight text-zinc-950">Custom</span>
-                </div>
-
-                <ul className="mt-8 space-y-3 text-xs text-zinc-600 font-medium">
-                  <li className="flex items-center gap-2">
-                    <Check className="h-4.5 w-4.5 text-blue-600 shrink-0" />
-                    <span>Millions of monthly pageviews</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <Check className="h-4.5 w-4.5 text-blue-600 shrink-0" />
-                    <span>Dedicated database nodes</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <Check className="h-4.5 w-4.5 text-blue-600 shrink-0" />
-                    <span>Custom domain proxy integrations</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <Check className="h-4.5 w-4.5 text-blue-600 shrink-0" />
-                    <span>Dedicated SLA Support & Setup</span>
-                  </li>
-                </ul>
-              </div>
-              <a href="mailto:support@eventlyticsx.com" className="mt-8 flex w-full items-center justify-center rounded-lg border border-zinc-200 bg-white py-2 text-sm font-semibold text-zinc-800 transition-all hover:bg-zinc-50">
-                Contact Sales
-              </a>
-            </div>
-          </div>
-        </div>
-      </section>
 
       {/* 7. FAQ Accordion */}
       <section id="faq" className="py-16 sm:py-24 border-t border-zinc-100 bg-zinc-50/50">
