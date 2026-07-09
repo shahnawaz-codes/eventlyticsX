@@ -10,8 +10,8 @@ export const useAnalyticsSoket = (
   const queryClient = useQueryClient();
   useEffect(() => {
     if (!projectKey) return;
+    // console.log("socket running for projectKey:", projectKey);
 
-    console.log("socket running for projectKey:", projectKey);
     // connection____
     socket.connect();
 
@@ -20,6 +20,7 @@ export const useAnalyticsSoket = (
       projectKey,
       dateLabel: dateRange?.label,
     });
+    // analytics datas
     socket.on(
       "analytics:overview",
       (overview: {
@@ -27,16 +28,10 @@ export const useAnalyticsSoket = (
         totalPageviews: number;
         uniqueVisitors: number;
       }) => {
-        console.table({
-          totalEvents: overview.totalEvents,
-          totalPageviews: overview.totalPageviews,
-          uniqueVisitors: overview.uniqueVisitors,
-        });
         queryClient.setQueryData(["overview", projectId, dateRange], overview);
       },
     );
     socket.on("analytics:breakdowns", (breakdownData) => {
-      console.log("analytics:breakdowns socket received:", breakdownData);
       queryClient.setQueryData(
         ["breakdowns", projectId, dateRange],
         breakdownData,
@@ -57,11 +52,9 @@ export const useAnalyticsSoket = (
       queryClient.setQueryData(["timeSeries", projectId, dateRange], trend);
     });
     socket.on("project:verified", () => {
-      console.log("Project verified in real-time!");
       queryClient.invalidateQueries({ queryKey: ["project", projectId] });
     });
     return () => {
-      console.log("cleaning up socket");
       socket.off("analytics:overview");
       socket.off("analytics:breakdowns");
       socket.off("analytics:realtime");
