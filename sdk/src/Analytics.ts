@@ -7,7 +7,7 @@ export interface AnalyticsConfig {
     endpoint?: string;
   };
 }
-const DEFAULT_ENDPOINT = "https://eventlyticsx.onrender.com";
+const DEFAULT_ENDPOINT = "https://eventlyticsx.onrender.com/api/track";
 
 export default class Analytics {
   // private fields
