@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
-import { useAuth, useUser, useClerk } from "@clerk/nextjs"
+import { useAuth, useUser, useClerk, UserButton } from "@clerk/nextjs"
 import { toast } from "sonner"
 
 import {
@@ -86,10 +86,9 @@ export default function Home() {
   const npmInstallCode = `npm install eventlytics-browser`
   const npmUsageCode = `import { Analytics } from "eventlytics-browser"
 
-const analytics = new Analytics(
-  "https://api.eventlyticsx.com/api/track",
-  "evt_8f2a74c9"
-)
+const analytics = new Analytics({
+  projectKey: "evt_8f2a74c9"
+})
 
 analytics.init()`
 
@@ -243,18 +242,20 @@ analytics.init()`
   return (
     <div className="flex-1 bg-white">
       {/* 1. Header/Navigation */}
-      <header className="sticky top-0 z-40 w-full border-b border-zinc-200/40 bg-white/40 backdrop-blur-md shadow-[0_2px_8px_-3px_rgba(0,0,0,0.05)]">
-        <div className="container mx-auto flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-600 shadow-md shadow-blue-500/20">
-              <Activity className="h-5 w-5 text-white" />
+      <header className="sticky top-0 z-40 w-full py-4 transition-all">
+        <div className="container mx-auto flex items-center justify-between px-4 sm:px-6 lg:px-8">
+          {/* Logo capsule */}
+          <div className="flex items-center gap-2 rounded-full border border-zinc-200/50 bg-white/70 px-4 py-2 shadow-[0_2px_8px_-3px_rgba(0,0,0,0.05)] backdrop-blur-md">
+            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-600 shadow-sm shadow-blue-500/20">
+              <Activity className="h-3.5 w-3.5 text-white" />
             </div>
-            <span className="text-xl font-bold tracking-tight text-zinc-950">
+            <span className="text-sm font-bold tracking-tight text-zinc-950">
               eventlytics<span className="text-blue-600">X</span>
             </span>
           </div>
 
-          <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-zinc-650">
+          {/* Navigation capsule */}
+          <nav className="hidden md:flex items-center gap-6 text-xs font-semibold text-zinc-600 rounded-full border border-zinc-200/50 bg-white/70 px-6 py-2 shadow-[0_2px_8px_-3px_rgba(0,0,0,0.05)] backdrop-blur-md">
             <a href="#features" className="transition-colors hover:text-blue-600">Features</a>
             <a href="#demo" className="transition-colors hover:text-blue-600">Interactive Demo</a>
             <a href="#setup" className="transition-colors hover:text-blue-600">Quick Start</a>
@@ -262,40 +263,31 @@ analytics.init()`
             <a href="#faq" className="transition-colors hover:text-blue-600">FAQ</a>
           </nav>
 
-          <div className="flex items-center gap-3">
+          {/* Action capsule */}
+          <div className="flex items-center gap-2">
             {isPending ? (
-              <div className="h-8 w-20 animate-pulse bg-zinc-100 rounded-lg" />
+              <div className="h-8 w-20 animate-pulse bg-zinc-100 rounded-full" />
             ) : user ? (
-              <div className="flex items-center gap-3">
-                <span className="text-sm font-medium text-zinc-650">
-                  {user?.fullName || user?.primaryEmailAddress?.emailAddress}
-                </span>
+              <div className="flex items-center gap-2.5 rounded-full border border-zinc-200/50 bg-white/70 p-1 pr-2.5 shadow-[0_2px_8px_-3px_rgba(0,0,0,0.05)] backdrop-blur-md">
                 <a
                   href="/dashboard"
-                  className="inline-flex shrink-0 items-center justify-center rounded-lg border border-transparent bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-all hover:bg-blue-700 select-none cursor-pointer"
+                  className="inline-flex shrink-0 items-center justify-center rounded-full bg-blue-600 px-4 py-1.5 text-xs font-bold text-white shadow-sm transition-all hover:bg-blue-700 hover:shadow-md hover:shadow-blue-500/10 active:scale-[0.98] select-none cursor-pointer"
                 >
                   Dashboard
                 </a>
-                <button
-                  onClick={async () => {
-
-                    await signOut();
-                    window.location.reload();
-                  }}
-                  className="text-xs font-medium text-zinc-650 hover:text-zinc-950 px-3 py-1.5 rounded-lg hover:bg-zinc-50 border border-zinc-150 shadow-sm cursor-pointer select-none bg-white transition-all"
-                >
-                  Sign Out
-                </button>
+                <div className="flex items-center">
+                  <UserButton />
+                </div>
               </div>
             ) : (
-              <>
-                <a href="/auth/sign-in" className="text-sm font-medium text-zinc-600 transition-colors hover:text-zinc-900 px-3 py-1.5 rounded-lg hover:bg-zinc-50">
+              <div className="flex items-center gap-1 rounded-full border border-zinc-200/50 bg-white/70 p-1 shadow-[0_2px_8px_-3px_rgba(0,0,0,0.05)] backdrop-blur-md">
+                <a href="/auth/sign-in" className="text-xs font-semibold text-zinc-650 transition-colors hover:text-blue-600 px-4 py-1.5 rounded-full hover:bg-zinc-50/50">
                   Log in
                 </a>
-                <a href="/auth/sign-up" className="inline-flex shrink-0 items-center justify-center rounded-lg border border-transparent bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-all hover:bg-blue-700 select-none">
+                <a href="/auth/sign-up" className="inline-flex shrink-0 items-center justify-center rounded-full bg-blue-600 px-4 py-1.5 text-xs font-bold text-white shadow-sm transition-all hover:bg-blue-700 select-none">
                   Start Free
                 </a>
-              </>
+              </div>
             )}
           </div>
         </div>
@@ -847,14 +839,13 @@ analytics.init()`
                         <span className="text-zinc-500">=</span>{" "}
                         <span className="text-purple-400">new</span>{" "}
                         <span className="text-blue-400">Analytics</span>
-                        <span className="text-zinc-500">(</span>
+                        <span className="text-zinc-500">({`{`}</span>
                         {"\n  "}
-                        <span className="text-amber-300">&quot;https://api.eventlyticsx.com/api/track&quot;</span>
-                        <span className="text-zinc-500">,</span>
-                        {"\n  "}
+                        <span className="text-zinc-400">projectKey</span>
+                        <span className="text-zinc-500">:</span>{" "}
                         <span className="text-amber-300">&quot;evt_8f2a74c9&quot;</span>
                         {"\n"}
-                        <span className="text-zinc-500">)</span>
+                        <span className="text-zinc-500">{`})`}</span>
                         {"\n\n"}
                         <span className="text-zinc-200">analytics</span>
                         <span className="text-zinc-500">.</span>

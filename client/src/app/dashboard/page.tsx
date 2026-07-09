@@ -54,6 +54,7 @@ export default function DashboardPage() {
   } = useCreateProject();
   const { data: projects, isLoading: projectsLoading } = useProjects();
   const [newProjectName, setNewProjectName] = useState("");
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   // Dropdown & Modal States
   const [activeMenuProjectId, setActiveMenuProjectId] = useState<string | null>(
@@ -168,14 +169,22 @@ export default function DashboardPage() {
       {/* Main Workspace */}
       <main className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8 flex-1 flex flex-col gap-8">
         {/* Banner / Header Title */}
-        <div className="flex flex-col gap-2">
-          <h1 className="text-3xl font-extrabold tracking-tight text-zinc-950">
-            Developer Workspace
-          </h1>
-          <p className="text-sm text-zinc-500">
-            Create web projects, configure event triggers, and monitor tracking
-            traffic details.
-          </p>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-zinc-200/50 pb-5">
+          <div className="flex flex-col gap-1">
+            <h1 className="text-3xl font-extrabold tracking-tight text-zinc-950">
+              Developer Workspace
+            </h1>
+            <p className="text-sm text-zinc-500">
+              Create web projects, configure event triggers, and monitor tracking traffic details.
+            </p>
+          </div>
+          <button
+            onClick={() => setIsCreateModalOpen(true)}
+            className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white px-4.5 py-2.5 text-sm font-semibold shadow-md shadow-blue-500/10 transition-all hover:shadow-blue-500/20 active:scale-[0.98] select-none cursor-pointer"
+          >
+            <Plus className="h-4.5 w-4.5" />
+            <span>New Project</span>
+          </button>
         </div>
 
         {/* Error Alert */}
@@ -193,221 +202,179 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* Dashboard Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          {/* Projects List (8 cols) */}
-          <div className="lg:col-span-8 space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-bold text-zinc-950 flex items-center gap-2">
-                <Database className="h-4 w-4 text-zinc-400" />
-                Active Projects
-                <span className="rounded-full bg-zinc-100 px-2.5 py-0.5 text-xs font-bold text-zinc-500">
-                  {projects?.length}
-                </span>
-              </h2>
+        {/* Active Projects Header Section */}
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-bold text-zinc-950 flex items-center gap-2">
+            <Database className="h-4 w-4 text-zinc-400" />
+            Active Projects
+            {projects && projects.length > 0 && (
+              <span className="rounded-full bg-zinc-100 px-2.5 py-0.5 text-xs font-bold text-zinc-500">
+                {projects.length}
+              </span>
+            )}
+          </h2>
+        </div>
+
+        {projectsLoading ? (
+          // Loading Skeleton Grid
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+            {[1, 2, 3].map((i) => (
+              <div
+                key={i}
+                className="h-44 w-full animate-pulse bg-white rounded-2xl border border-zinc-200/60"
+              />
+            ))}
+          </div>
+        ) : projects?.length === 0 || projects === undefined ? (
+          // Empty State Card
+          <div className="rounded-2xl border border-dashed border-zinc-200 bg-white p-12 text-center flex flex-col items-center gap-5 max-w-xl mx-auto mt-4 w-full">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-50 text-blue-600 border border-blue-100">
+              <Folder className="h-6 w-6" />
             </div>
-            {projectsLoading ? (
-                // Loading Skeleton
-                <div className="space-y-3">
-                {[1, 2].map((i) => (
-                    <div
-                      key={i}
-                      className="h-32 w-full animate-pulse bg-white rounded-2xl border border-zinc-200/60"
-                    />
-                  ))}
-                </div>
-              ) : projects?.length === 0 || projects === undefined ? (
-                // Empty State
-                <div className="rounded-2xl border border-dashed border-zinc-200 bg-white p-12 text-center flex flex-col items-center gap-4">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-50 text-blue-600 border border-blue-100">
-                    <Folder className="h-6 w-6" />
-                  </div>
-                  <div className="max-w-sm space-y-1">
-                    <h3 className="font-bold text-zinc-900">No projects yet</h3>
-                    <p className="text-xs text-zinc-500 leading-normal">
-                      Create your first project on the right panel to get your
-                      tracking public key and integrate the SDK.
-                    </p>
-                  </div>
-                </div>
-              ) : (
-                // Projects List Render
+            <div className="max-w-sm space-y-1">
+              <h3 className="font-bold text-zinc-900">No projects yet</h3>
+              <p className="text-xs text-zinc-500 leading-normal">
+                Create your first project to generate your public tracking key and initialize the analytics SDK.
+              </p>
+            </div>
+            <button
+              onClick={() => setIsCreateModalOpen(true)}
+              className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 text-xs font-semibold shadow-sm transition-all active:scale-[0.98] select-none cursor-pointer"
+            >
+              <Plus className="h-4 w-4" />
+              <span>Create Your First Project</span>
+            </button>
+          </div>
+        ) : (
+          // Responsive Projects Grid
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+            {projects?.map((project: Project) => (
+              <div
+                key={project.id}
+                className="group relative rounded-2xl border border-zinc-200/80 bg-white p-5 shadow-sm transition-all duration-200 hover:border-zinc-300/80 hover:shadow-md hover:shadow-zinc-200/20 flex flex-col justify-between min-h-[180px]"
+              >
                 <div className="space-y-3.5">
-                  {projects?.map((project: Project) => (
-                    <div
-                      key={project.id}
-                      className="group relative rounded-2xl border border-zinc-200/80 bg-white p-5 shadow-sm transition-all duration-200 hover:border-zinc-300/80 hover:shadow-md hover:shadow-zinc-200/20"
-                    >
-                      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-                        <div className="space-y-2.5">
-                          <div className="flex items-center gap-2.5">
-                            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-zinc-50 border border-zinc-150 text-zinc-650">
-                              <Folder className="h-4.5 w-4.5" />
-                            </div>
-                            <h3 className="font-bold text-zinc-900 group-hover:text-blue-600 transition-colors">
-                              {project.name}
-                            </h3>
-                            {project.verified ? (
-                              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-250 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 select-none">
-                                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                                Verified
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center gap-1 rounded-full bg-red-50 border border-red-250 px-2 py-0.5 text-[10px] font-semibold text-red-700 select-none">
-                                <span className="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse" />
-                                Not Verified
-                              </span>
-                            )}
-                          </div>
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-zinc-50 border border-zinc-150 text-zinc-650">
+                        <Folder className="h-4.5 w-4.5" />
+                      </div>
+                      <h3 className="font-bold text-zinc-900 group-hover:text-blue-600 transition-colors truncate">
+                        {project.name}
+                      </h3>
+                    </div>
 
-                          {/* Public Key Display */}
-                          <div className="flex flex-wrap items-center gap-2 text-xs">
-                            <span className="font-medium text-zinc-400 flex items-center gap-1">
-                              <Key className="h-3 w-3" /> Public Key:
-                            </span>
-                            <code className="rounded bg-zinc-100 px-2 py-0.5 text-zinc-700 font-mono text-[11px] select-all">
-                              {project.public_key}
-                            </code>
-                            <button
-                              onClick={() =>
-                                handleCopyKey(project.public_key, project.id)
-                              }
-                              className="text-zinc-400 hover:text-zinc-900 transition-colors select-none"
-                              title="Copy Key"
-                            >
-                              {copiedId === project.id ? (
-                                <Check className="h-3.5 w-3.5 text-emerald-500" />
-                              ) : (
-                                <Copy className="h-3.5 w-3.5" />
-                              )}
-                            </button>
-                          </div>
-                        </div>
+                    <div className="relative shrink-0">
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setActiveMenuProjectId(
+                            activeMenuProjectId === project.id
+                              ? null
+                              : project.id,
+                          );
+                        }}
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-500 hover:bg-zinc-50 hover:text-zinc-800 transition-all select-none focus:outline-none cursor-pointer"
+                        title="Project Actions"
+                      >
+                        <MoreVertical className="h-4 w-4" />
+                      </button>
 
-                        <div className="self-end sm:self-center flex items-center gap-2">
-                          <a
-                            href={`/dashboard/project/${project.id}`}
-                            className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-blue-50 border border-blue-150 px-3.5 py-2 text-xs font-semibold text-blue-700 hover:bg-blue-600 hover:text-white transition-all select-none"
-                          >
-                            <span>Go to Project</span>
-                            <ChevronRight className="h-3.5 w-3.5" />
-                          </a>
-
-                          <div className="relative">
+                      {activeMenuProjectId === project.id && (
+                        <>
+                          <div
+                            className="fixed inset-0 z-10"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setActiveMenuProjectId(null);
+                            }}
+                          />
+                          <div className="absolute right-0 mt-1.5 w-36 rounded-xl border border-zinc-200 bg-white p-1 shadow-lg z-20 animate-in fade-in slide-in-from-top-1 duration-100">
                             <button
                               onClick={(e) => {
                                 e.preventDefault();
                                 e.stopPropagation();
-                                setActiveMenuProjectId(
-                                  activeMenuProjectId === project.id
-                                    ? null
-                                    : project.id,
-                                );
+                                setActiveMenuProjectId(null);
+                                setEditingProject(project);
+                                setEditProjectName(project.name);
                               }}
-                              className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-500 hover:bg-zinc-50 hover:text-zinc-800 transition-all select-none focus:outline-none cursor-pointer"
-                              title="Project Actions"
+                              className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs font-medium text-zinc-700 hover:bg-zinc-50 cursor-pointer"
                             >
-                              <MoreVertical className="h-4 w-4" />
+                              <Edit3 className="h-3.5 w-3.5 text-zinc-400" />
+                              Edit Name
                             </button>
-
-                            {activeMenuProjectId === project.id && (
-                              <>
-                                <div
-                                  className="fixed inset-0 z-10"
-                                  onClick={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    setActiveMenuProjectId(null);
-                                  }}
-                                />
-                                <div className="absolute right-0 mt-1.5 w-36 rounded-xl border border-zinc-200 bg-white p-1 shadow-lg z-20 animate-in fade-in slide-in-from-top-1 duration-100">
-                                  <button
-                                    onClick={(e) => {
-                                      e.preventDefault();
-                                      e.stopPropagation();
-                                      setActiveMenuProjectId(null);
-                                      setEditingProject(project);
-                                      setEditProjectName(project.name);
-                                    }}
-                                    className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs font-medium text-zinc-700 hover:bg-zinc-50 cursor-pointer"
-                                  >
-                                    <Edit3 className="h-3.5 w-3.5 text-zinc-400" />
-                                    Edit Name
-                                  </button>
-                                  <button
-                                    onClick={(e) => {
-                                      e.preventDefault();
-                                      e.stopPropagation();
-                                      setActiveMenuProjectId(null);
-                                      setDeletingProject(project);
-                                      setDeleteConfirmationText("");
-                                    }}
-                                    className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs font-medium text-red-650 hover:bg-red-50 cursor-pointer"
-                                  >
-                                    <Trash2 className="h-3.5 w-3.5" />
-                                    Delete
-                                  </button>
-                                </div>
-                              </>
-                            )}
+                            <button
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setActiveMenuProjectId(null);
+                                setDeletingProject(project);
+                                setDeleteConfirmationText("");
+                              }}
+                              className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs font-medium text-red-650 hover:bg-red-50 cursor-pointer"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                              Delete
+                            </button>
                           </div>
-                        </div>
-                      </div>
+                        </>
+                      )}
                     </div>
-                  ))}
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    {project.verified ? (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-250 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 select-none">
+                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                        Verified
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-red-50 border border-red-255 px-2 py-0.5 text-[10px] font-semibold text-red-700 select-none">
+                        <span className="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse" />
+                        Not Verified
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Public Key Display */}
+                  <div className="flex items-center gap-2 text-xs">
+                    <span className="font-medium text-zinc-400 flex items-center gap-1 shrink-0">
+                      <Key className="h-3 w-3" /> Key:
+                    </span>
+                    <code className="rounded bg-zinc-100 px-2 py-0.5 text-zinc-700 font-mono text-[11px] select-all truncate">
+                      {project.public_key}
+                    </code>
+                    <button
+                      onClick={() =>
+                        handleCopyKey(project.public_key, project.id)
+                      }
+                      className="text-zinc-400 hover:text-zinc-900 transition-colors select-none shrink-0"
+                      title="Copy Key"
+                    >
+                      {copiedId === project.id ? (
+                        <Check className="h-3.5 w-3.5 text-emerald-500" />
+                      ) : (
+                        <Copy className="h-3.5 w-3.5" />
+                      )}
+                    </button>
+                  </div>
                 </div>
-              )}
-          </div>
-          {/* Create Project Panel (4 cols) */}
-          <div className="lg:col-span-4 rounded-2xl border border-zinc-200/80 bg-white p-6 shadow-sm">
-            <h2 className="text-lg font-bold text-zinc-950 mb-1.5 flex items-center gap-2">
-              <Plus className="h-5 w-5 text-blue-600" />
-              New Project
-            </h2>
-            <p className="text-xs text-zinc-500 mb-6 leading-relaxed">
-              Name your workspace. Once created, we will generate a dedicated
-              tracker key and load the SDK installation guidelines.
-            </p>
 
-            <form onSubmit={handleCreateProject} className="space-y-4">
-              <div className="space-y-2">
-                <label
-                  htmlFor="projectName"
-                  className="text-xs font-bold text-zinc-700 uppercase tracking-wider"
-                >
-                  Project Name
-                </label>
-                <input
-                  type="text"
-                  id="projectName"
-                  required
-                  placeholder="e.g. My Portfolio Site"
-                  value={newProjectName}
-                  onChange={(e) => setNewProjectName(e.target.value)}
-                  className="w-full rounded-xl border border-zinc-200 bg-white px-3.5 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-blue-500 focus:outline-none transition-colors"
-                />
+                <div className="mt-4 pt-3.5 border-t border-zinc-100">
+                  <a
+                    href={`/dashboard/project/${project.id}`}
+                    className="w-full inline-flex items-center justify-center gap-1.5 rounded-xl bg-blue-50 border border-blue-150 px-3.5 py-2.5 text-xs font-semibold text-blue-700 hover:bg-blue-600 hover:text-white transition-all select-none"
+                  >
+                    <span>Go to Project</span>
+                    <ChevronRight className="h-3.5 w-3.5" />
+                  </a>
+                </div>
               </div>
-
-              <button
-                type="submit"
-                disabled={isCreating || !newProjectName.trim()}
-                className="w-full inline-flex items-center justify-center rounded-xl bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white py-2.5 text-sm font-semibold shadow-md shadow-blue-500/10 transition-all select-none cursor-pointer"
-              >
-                {isCreating ? (
-                  <>
-                    <Activity className="h-4 w-4 animate-spin mr-1.5" />
-                    <span>Creating project...</span>
-                  </>
-                ) : (
-                  <>
-                    <Plus className="h-4 w-4 mr-1.5" />
-                    <span>Create Project</span>
-                  </>
-                )}
-              </button>
-            </form>
+            ))}
           </div>
-        </div>
+        )}
       </main>
 
       {/* Edit Project Name Modal */}
@@ -474,6 +441,82 @@ export default function DashboardPage() {
                     </>
                   ) : (
                     <span>Save Changes</span>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Create Project Modal */}
+      {isCreateModalOpen && (
+        <div className="fixed inset-0 z-55 flex items-center justify-center">
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 bg-zinc-950/45 backdrop-blur-sm transition-opacity duration-300"
+            onClick={() => {
+              setIsCreateModalOpen(false);
+              setNewProjectName("");
+            }}
+          />
+
+          {/* Modal Container */}
+          <div className="relative z-10 w-full max-w-md scale-100 rounded-2xl border border-zinc-150 bg-white p-6 shadow-2xl transition-all animate-in fade-in zoom-in-95 duration-200">
+            <h3 className="text-lg font-bold text-zinc-950 flex items-center gap-2 mb-2">
+              <Plus className="h-5 w-5 text-blue-600" />
+              New Project
+            </h3>
+            <p className="text-xs text-zinc-500 mb-6 leading-relaxed">
+              Name your workspace. Once created, we will generate a dedicated tracker key and load the SDK installation guidelines.
+            </p>
+
+            <form onSubmit={async (e) => {
+              await handleCreateProject(e);
+              setIsCreateModalOpen(false);
+            }} className="space-y-5">
+              <div className="space-y-2">
+                <label
+                  htmlFor="projectName"
+                  className="text-xs font-bold text-zinc-700 uppercase tracking-wider"
+                >
+                  Project Name
+                </label>
+                <input
+                  type="text"
+                  id="projectName"
+                  required
+                  placeholder="e.g. My Portfolio Site"
+                  value={newProjectName}
+                  onChange={(e) => setNewProjectName(e.target.value)}
+                  className="w-full rounded-xl border border-zinc-200 bg-white px-3.5 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-blue-500 focus:outline-none transition-colors"
+                  autoFocus
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsCreateModalOpen(false);
+                    setNewProjectName("");
+                  }}
+                  className="inline-flex items-center justify-center rounded-xl border border-zinc-200 bg-white hover:bg-zinc-50 px-4 py-2.5 text-sm font-semibold text-zinc-700 transition-all select-none cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isCreating || !newProjectName.trim()}
+                  className="inline-flex items-center justify-center rounded-xl bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white px-4 py-2.5 text-sm font-semibold shadow-md shadow-blue-500/10 transition-all select-none cursor-pointer"
+                >
+                  {isCreating ? (
+                    <>
+                      <Activity className="h-4 w-4 animate-spin mr-1.5" />
+                      <span>Creating...</span>
+                    </>
+                  ) : (
+                    <span>Create Project</span>
                   )}
                 </button>
               </div>
