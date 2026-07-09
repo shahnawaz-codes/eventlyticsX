@@ -157,7 +157,7 @@ const emitEvent = (projectKey: string) => {
       io.to(`dashboard:${projectKey}`).emit("project:verified", {
         verified: true,
       });
-    },
+    }, 
   };
 };
 

@@ -5,10 +5,11 @@ import http from "http";
 const app = express();
 // create http server
 const server = http.createServer(app);
-// accept the socket upgrade req and set the cors config for security
+const clientUrl = process.env.CLIENT_URL || "http://localhost:3000";
+
 export const io = new Server(server, {
   cors: {
-    origin: "http://localhost:3000",
+    origin: clientUrl,
     methods: ["GET", "POST"],
   },
 });
