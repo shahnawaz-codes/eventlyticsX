@@ -18,24 +18,7 @@ export const tracking = async (req: Request, res: Response) => {
       (Array.isArray(forwardedFor) ? forwardedFor[0] : forwardedFor)
         ?.split(",")[0]
         ?.trim() || req.socket.remoteAddress;
-    console.log("forwardedFor", forwardedFor);
-    console.log("ip", ip);
     let geo: any = ip ? geoip.lookup(ip) : null;
-    if (!geo || ip === "::1" || ip === "127.0.0.1" || ip?.includes("192.168.") || ip?.includes("10.")) {
-      const mockLocations = [
-        { country: "United States", region: "California", city: "Mountain View" },
-        { country: "India", region: "Maharashtra", city: "Mumbai" },
-        { country: "United Kingdom", region: "England", city: "London" },
-        { country: "Germany", region: "Bavaria", city: "Munich" },
-        { country: "Japan", region: "Tokyo", city: "Tokyo" },
-        { country: "United States", region: "New York", city: "New York" },
-      ];
-      const idx = sessionId
-        ? Math.abs(sessionId.split("").reduce((acc: number, char: string) => acc + char.charCodeAt(0), 0)) % mockLocations.length
-        : 0;
-      geo = mockLocations[idx];
-    }
-    console.log("geo resolved", geo);
     const ua = req.headers["user-agent"];
     const result = new UAParser(ua).getResult();
     const payload = {
