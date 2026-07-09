@@ -3,8 +3,11 @@ import { pageView, trackPageClick, pageExit } from "./events";
 
 export interface AnalyticsConfig {
   projectKey: string;
+  optional?: {
+    endpoint?: string;
+  };
 }
-const DEFAULT_ENDPOINT = "http://localhost:5000/api/track";
+const DEFAULT_ENDPOINT = "https://eventlyticsx.onrender.com";
 
 export default class Analytics {
   // private fields
@@ -16,7 +19,7 @@ export default class Analytics {
 
   // configure the sdk
   constructor(config: AnalyticsConfig) {
-    this.endpoint = DEFAULT_ENDPOINT;
+    this.endpoint = config.optional?.endpoint || DEFAULT_ENDPOINT;
     this.projectKey = config.projectKey;
   }
 
