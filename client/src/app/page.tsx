@@ -254,10 +254,11 @@ analytics.init()`
             </span>
           </div>
 
-          <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-zinc-600">
+          <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-zinc-650">
             <a href="#features" className="transition-colors hover:text-blue-600">Features</a>
             <a href="#demo" className="transition-colors hover:text-blue-600">Interactive Demo</a>
             <a href="#setup" className="transition-colors hover:text-blue-600">Quick Start</a>
+            <a href="/docs" className="transition-colors hover:text-blue-600">Docs</a>
             <a href="#faq" className="transition-colors hover:text-blue-600">FAQ</a>
           </nav>
 
@@ -1026,8 +1027,8 @@ analytics.init()`
             <div>
               <span className="text-xs font-semibold text-zinc-200 uppercase tracking-wider block mb-4">Resources</span>
               <ul className="space-y-2.5 text-xs">
-                <li><a href="#faq" className="hover:text-white transition-colors">Setup Docs</a></li>
-                <li><a href="#faq" className="hover:text-white transition-colors">API Reference</a></li>
+                <li><a href="/docs" className="hover:text-white transition-colors">Setup Docs</a></li>
+                <li><a href="/docs?tab=api" className="hover:text-white transition-colors">API Reference</a></li>
                 <li><a href="#faq" className="hover:text-white transition-colors">Privacy Guide</a></li>
                 <li><a href="#faq" className="hover:text-white transition-colors">GDPR Checklist</a></li>
               </ul>
