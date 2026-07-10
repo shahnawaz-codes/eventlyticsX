@@ -26,8 +26,8 @@ io.on("connection", (socket) => {
   socket.on("join-project", ({ projectKey, dateLabel }) => {
     // leave the privious rooms if joined
     if (socket.data.projectKey) {
-      socket.leave(`dashboard:${projectKey}:${dateLabel}`);
-      socket.leave(`dashboard:${projectKey}`);
+      socket.leave(`dashboard:${socket.data.projectKey}:${socket.data.filters}`);
+      socket.leave(`dashboard:${socket.data.projectKey}`);
     }
     socket.data.projectKey = projectKey;
     socket.data.filters = dateLabel;

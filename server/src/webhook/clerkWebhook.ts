@@ -18,16 +18,22 @@ export const clerkWebhook = async (req: Request, res: Response) => {
     });
     return res.status(400).json({ error: "Missing Svix headers" });
   }
+  let event: any;
   try {
     // Initialize Svix Webhook validator
     const wh = new Webhook(process.env.CLERK_WEBHOOK_SECRET!);
     // Verify signature. If it matches, returns the verified JSON payload object
-    const event = wh.verify(payload, {
+    event = wh.verify(payload, {
       "svix-id": svixId,
       "svix-signature": svixSignature,
       "svix-timestamp": svixTimestamp,
     }) as any;
+  } catch (err) {
+    console.error("Webhook signature verification failed:", err);
+    return res.status(400).json({ error: "Invalid signature" });
+  }
 
+  try {
     // extract id and type
     const { id } = event.data;
     const eventType = event.type;
@@ -36,7 +42,10 @@ export const clerkWebhook = async (req: Request, res: Response) => {
     });
     // Sync with your Database (User model)
     if (eventType === "user.created") {
-      if (isUserExist) return;
+      if (isUserExist) {
+        console.log(`User already exists with ID: ${id}, skipping creation.`);
+        return res.status(200).json({ success: true, message: "User already exists" });
+      }
       const email = event.data.email_addresses[0]?.email_address;
       const name =
         `${event.data.first_name || ""} ${event.data.last_name || ""}`.trim();
@@ -48,17 +57,18 @@ export const clerkWebhook = async (req: Request, res: Response) => {
         },
       });
       console.log("successfully user created");
-    }
-    if (eventType === "user.deleted") {
+    } else if (eventType === "user.deleted") {
       if (isUserExist) {
         await prisma.user.delete({ where: { id } });
+        console.log("successfully user deleted");
+      } else {
+        console.log(`User with ID: ${id} does not exist in DB, skipping deletion.`);
       }
-      console.log("successfully user deleted");
     }
     // Return a 200 response to acknowledge receipt of the webhook
     return res.status(200).json({ success: true });
   } catch (error) {
-    console.error("Webhook signature verification failed:", error);
-    return res.status(400).json({ error: "Invalid signature" });
+    console.error("Error processing Clerk webhook event:", error);
+    return res.status(500).json({ error: "Internal Server Error" });
   }
 };

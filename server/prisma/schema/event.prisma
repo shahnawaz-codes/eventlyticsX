@@ -3,7 +3,7 @@ model Event {
   eventType  String
   path       String
   projectKey String
-  project    Project  @relation(fields: [projectKey], references: [public_key])
+  project    Project  @relation(fields: [projectKey], references: [public_key], onDelete: Cascade)
   sessionId  String
   referrer   String
   browser    String
