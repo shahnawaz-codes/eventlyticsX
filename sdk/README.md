@@ -36,16 +36,23 @@ yarn add eventlytics-browser
 ## Quick Start
 
 ### 1. Initialize the SDK
-Configure and instantiate the SDK with your backend endpoint and public project key, then call `.init()` to set up automated browser event tracking:
+Configure and instantiate the SDK with your project key. If you are self-hosting, you can also specify a custom tracking endpoint:
 
 ```javascript
 import { Analytics } from "eventlytics-browser";
 
-// Instantiate the SDK
-const analytics = new Analytics(
-  "https://your-analytics-domain.com/api/track", // Backend tracking endpoint
-  "evX_your-public-project-key"                 // Public project key
-);
+// Instantiate the SDK (using the default hosted endpoint)
+const analytics = new Analytics({
+  projectKey: "evX_your-public-project-key"
+});
+
+// OR: If you are self-hosting, specify your own backend endpoint
+const analytics = new Analytics({
+  projectKey: "evX_your-public-project-key",
+  optional: {
+    endpoint: "https://your-analytics-domain.com/api/track"
+  }
+});
 
 // Start auto-tracking page-views, clicks, and exits
 analytics.init();
@@ -83,10 +90,12 @@ To avoid circular dependencies, it is recommended to create a dedicated configur
 import { Analytics } from "eventlytics-browser";
 
 // Create the singleton instance
-export const analytics = new Analytics(
-  "http://localhost:5000/api/track",
-  "evX_your-project-key-here"
-);
+export const analytics = new Analytics({
+  projectKey: "evX_your-project-key-here",
+  optional: {
+    endpoint: "http://localhost:5000/api/track" // Override for local testing
+  }
+});
 ```
 
 ### Step 2: Initialize in Entry Point (`src/main.tsx`)
@@ -124,11 +133,13 @@ export function MyButton() {
 
 ## API Reference
 
-### `new Analytics(endPoint, projectKey)`
+### `new Analytics(config)`
 Creates a new client instance.
 
-* **`endPoint`** (`string`): The destination URL where events will be posted.
-* **`projectKey`** (`string`): Your public Eventlytics project identifier.
+* **`config`** (`AnalyticsConfig`): The configuration options.
+  * **`projectKey`** (`string`): Your public Eventlytics project identifier.
+  * **`optional`** (`object`, optional):
+    * **`endpoint`** (`string`, optional): A custom backend URL where tracking requests are sent. Defaults to `https://eventlyticsx.onrender.com`.
 
 ### `analytics.init()`
 Sets up the automatic DOM tracking listeners. Call this once at your application's startup.
