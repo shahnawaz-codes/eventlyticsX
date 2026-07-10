@@ -35,22 +35,37 @@ export const clerkWebhook = async (req: Request, res: Response) => {
 
   try {
     // extract id and type
-    const email = event.data.email_addresses[0]?.email_address;
     const { id } = event.data;
     const eventType = event.type;
-    const isUserExist = await prisma.user.findUnique({
-      where: { email: email },
-    });
+
     // Sync with your Database (User model)
     if (eventType === "user.created") {
-      if (isUserExist) {
-        console.log(
-          `User already exists with EMAIL: ${email}, skipping creation.`,
-        );
-        return res
-          .status(200)
-          .json({ success: false, message: "User already exists" });
+      const email = event.data.email_addresses?.[0]?.email_address;
+      if (!email) {
+        console.error("No email address found in user.created event:", event.data);
+        return res.status(400).json({ error: "Email is required" });
       }
+
+      // Check if user already exists by ID
+      const userById = await prisma.user.findUnique({
+        where: { id: id },
+      });
+      if (userById) {
+        console.log(`User already exists with ID: ${id}, skipping creation.`);
+        return res.status(200).json({ success: true, message: "User already exists" });
+      }
+
+      // Check if user already exists by email (stale record check)
+      const userByEmail = await prisma.user.findUnique({
+        where: { email: email },
+      });
+      if (userByEmail) {
+        console.warn(
+          `Stale user record found with email ${email} (ID: ${userByEmail.id}). Deleting stale record to proceed with new registration.`
+        );
+        await prisma.user.delete({ where: { id: userByEmail.id } });
+      }
+
       const name =
         `${event.data.first_name || ""} ${event.data.last_name || ""}`.trim();
       await prisma.user.create({
@@ -62,13 +77,14 @@ export const clerkWebhook = async (req: Request, res: Response) => {
       });
       console.log("successfully user created");
     } else if (eventType === "user.deleted") {
-      if (isUserExist) {
+      const userById = await prisma.user.findUnique({
+        where: { id: id },
+      });
+      if (userById) {
         await prisma.user.delete({ where: { id } });
-        console.log("successfully user deleted");
+        console.log(`successfully user deleted: ${id}`);
       } else {
-        console.log(
-          `User with EMAIL: ${email} does not exist in DB, skipping deletion.`,
-        );
+        console.log(`User with ID: ${id} does not exist in DB, skipping deletion.`);
       }
     }
     // Return a 200 response to acknowledge receipt of the webhook
