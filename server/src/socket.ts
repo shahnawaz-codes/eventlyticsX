@@ -19,7 +19,6 @@ app.set("io", io);
 //---------------------------------------------------------
 // establish the connection b/w server and client
 io.on("connection", (socket) => {
-  io.use
   
   console.log("hello bro", socket.id);
   // join perticular project and receive the projectId from client

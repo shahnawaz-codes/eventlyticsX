@@ -17,7 +17,7 @@ export const createProject = async (
     if (!projectName) {
       return res
         .status(400)
-        .json({ success: false, messege: "project name is required" });
+        .json({ success: false, message: "project name is required" });
     }
     // create project_____
     const project = await createProjectService(
