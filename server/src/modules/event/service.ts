@@ -12,6 +12,10 @@ interface TrackEventInput {
   os?: string;
   city?: string;
   region?: string;
+  utm_campaign?: string | null;
+  utm_source?: string | null;
+  utm_medium?: string | null;
+  metadata?: Record<string, any> | null;
 }
 
 export const trackEventService = async (input: TrackEventInput) => {
@@ -43,8 +47,13 @@ export const trackEventService = async (input: TrackEventInput) => {
       country: input.country || "unknown",
       city: input.city || null,
       region: input.region || null,
+      utm_campaign: input.utm_campaign || null,
+      utm_source: input.utm_source || null,
+      utm_medium: input.utm_medium || null,
+      metadata: input.metadata || {},
     },
   });
   
   return newEvent;
 };
+
