@@ -54,6 +54,7 @@ export default class Analytics {
 
   // custom event track___
   track(eventName: string, data = {}) {
-    this.send(eventName, data);
+    this.send(eventName, { metadata: data });
   }
 }
+
