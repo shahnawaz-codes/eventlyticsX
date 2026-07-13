@@ -1,16 +1,24 @@
 model Event {
-  id         String   @id @default(uuid())
-  eventType  String
-  path       String
-  projectKey String
-  project    Project  @relation(fields: [projectKey], references: [public_key], onDelete: Cascade)
-  sessionId  String
-  referrer   String
-  browser    String
-  os         String
-  device     String
-  country    String
-  city       String?
-  region     String?
-  createdAt  DateTime @default(now())
+  id           String   @id @default(uuid())
+  eventType    String
+  path         String
+  projectKey   String
+  project      Project  @relation(fields: [projectKey], references: [public_key], onDelete: Cascade)
+  sessionId    String
+  referrer     String
+  browser      String
+  os           String
+  device       String
+  country      String
+  city         String?
+  region       String?
+  utm_campaign String?
+  utm_source   String?
+  utm_medium   String?
+  metadata     Json?    @default("{}")
+  createdAt    DateTime @default(now())
+
+  @@index([projectKey, createdAt])
+  @@index([projectKey, sessionId])
 }
+
