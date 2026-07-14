@@ -75,7 +75,7 @@ Add the script tag to the <head> or bottom of your page:
 \`\`\`html
 <script 
   async
-  src="https://cdn.jsdelivr.net/npm/eventlytics-browser@1.0.1/dist/tracker.global.js" 
+  src="https://cdn.jsdelivr.net/npm/eventlytics-browser@1/dist/tracker.global.js" 
   data-project-key="{{PROJECT_KEY}}"
   data-endpoint="{{API_ENDPOINT}}"
 ></script>
