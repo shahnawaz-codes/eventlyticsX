@@ -15,6 +15,7 @@ interface TrackEventInput {
   utm_campaign?: string | null;
   utm_source?: string | null;
   utm_medium?: string | null;
+  duration?: number | null;
   metadata?: Record<string, any> | null;
 }
 
@@ -50,6 +51,7 @@ export const trackEventService = async (input: TrackEventInput) => {
       utm_campaign: input.utm_campaign || null,
       utm_source: input.utm_source || null,
       utm_medium: input.utm_medium || null,
+      duration: input.duration ?? null,
       metadata: input.metadata || {},
     },
   });

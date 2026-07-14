@@ -299,23 +299,27 @@ const eventRepo = {
     startDate?: Date,
     endDate?: Date,
   ) => {
-    const total = await prisma.event.count({
+    const campaignGroup = await prisma.event.groupBy({
+      by: ["utm_campaign"],
       where: {
         projectKey,
+        utm_campaign: { not: null },
         ...getDateFilter(startDate, endDate),
+      },
+      _count: {
+        id: true,
       },
     });
 
-    if (total === 0) return [];
-    
-    return [
-      { campaign: "Summer Promo 2026", count: Math.round(total * 0.45) || 1 },
-      { campaign: "Newsletter Q2", count: Math.round(total * 0.25) || 1 },
-      { campaign: "Google CPC Search", count: Math.round(total * 0.15) || 1 },
-      { campaign: "Product Hunt Launch", count: Math.round(total * 0.10) || 1 },
-      { campaign: "Twitter Referral Campaign", count: Math.round(total * 0.05) || 1 },
-    ].filter(c => c.count > 0);
+    return campaignGroup
+      .map((c) => ({
+        campaign: c.utm_campaign as string,
+        count: c._count.id,
+      }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 10);
   },
+
 
   // 9. Daily traffic trend for custom date range (Recharts visualization)
   timeseriesTrend: async (
@@ -377,6 +381,25 @@ const eventRepo = {
       pageviews: stats.pageviews,
       uniqueVisitors: stats.visitors.size,
     }));
+  },
+
+  // 10. Average Session Duration
+  averageSessionDuration: async function (
+    projectKey: string,
+    startDate?: Date,
+    endDate?: Date,
+  ) {
+    const result = await prisma.event.aggregate({
+      _avg: {
+        duration: true,
+      },
+      where: {
+        projectKey,
+        eventType: "page-exit",
+        ...getDateFilter(startDate, endDate),
+      },
+    });
+    return Math.round(result._avg.duration || 0);
   },
 };
 
