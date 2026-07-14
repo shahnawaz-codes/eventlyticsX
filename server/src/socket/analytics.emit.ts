@@ -31,17 +31,19 @@ const emitEvent = (projectKey: string) => {
         if (sockets.length == 0) continue;
         const { startDate, endDate }: any = SetDateByFilterLabel(label);
         // Run the server-side aggregation from eventRepo!
-        const [totalEvents, totalPageviews, uniqueVisitors] = await Promise.all(
+        const [totalEvents, totalPageviews, uniqueVisitors, averageDuration] = await Promise.all(
           [
             eventRepo.totalEvents(projectKey, startDate, endDate),
             eventRepo.totalPageviews(projectKey, startDate, endDate),
             eventRepo.uniqueVisitorCount(projectKey, startDate, endDate),
+            eventRepo.averageSessionDuration(projectKey, startDate, endDate),
           ],
         );
         io.to(roomName).emit("analytics:overview", {
           totalEvents,
           totalPageviews,
           uniqueVisitors,
+          averageDuration,
         });
       }
     },
