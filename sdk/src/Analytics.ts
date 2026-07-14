@@ -34,11 +34,11 @@ export default class Analytics {
     pageView(this.send);
   }
 
-  trackPageClick() {
+  private trackPageClick() {
     trackPageClick(this.send);
   }
 
-  pageExit() {
+  private pageExit() {
     pageExit(this.send, this.startTime);
   }
 
@@ -50,6 +50,15 @@ export default class Analytics {
     this.pageView();
     this.trackPageClick();
     this.pageExit();
+
+    if (typeof window !== "undefined") {
+      console.log(
+        "%c🚀 Eventlytics SDK Initialized! %cCheck out the docs for custom event tracking & API guidelines: %chttps://eventlyticsx.onrender.com/docs",
+        "color: #2563eb; font-weight: bold;",
+        "color: #4b5563;",
+        "color: #2563eb; text-decoration: underline; font-weight: bold;"
+      );
+    }
   }
 
   // custom event track___
