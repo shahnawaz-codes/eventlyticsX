@@ -30,11 +30,17 @@ export const getOverviewService = async (
     startDate,
     endDate,
   );
+  const averageDuration = await eventRepo.averageSessionDuration(
+    project.public_key,
+    startDate,
+    endDate,
+  );
 
   return {
     totalEvents,
     totalPageviews,
     uniqueVisitors,
+    averageDuration,
   };
 };
 
