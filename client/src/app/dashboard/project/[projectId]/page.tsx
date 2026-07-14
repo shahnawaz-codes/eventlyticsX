@@ -65,10 +65,17 @@ export default function ProjectDetailsPage() {
 
   useEffect(() => {
     if (project?.verified && wasUnverified) {
-      toast.success("SDK Integration verified successfully!");
+      toast.success("SDK Integration verified successfully!", {
+        description: "For details on custom event tracking & API reference, visit the Docs.",
+        action: {
+          label: "View Docs",
+          onClick: () => router.push("/docs"),
+        },
+        duration: 8000,
+      });
       setWasUnverified(false);
     }
-  }, [project?.verified, wasUnverified]);
+  }, [project?.verified, wasUnverified, router]);
 
   const handleRefresh = async () => {
     try {

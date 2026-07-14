@@ -302,43 +302,50 @@ export default function AnalyticsDashboard({
           )}
 
           {activeTab === "explore" && (
-            <div className="rounded-2xl border border-zinc-200 bg-white p-8 text-center space-y-4 max-w-lg mx-auto">
-              <Compass className="h-12 w-12 text-zinc-350 mx-auto" />
-              <h2 className="text-base font-bold text-zinc-800">
-                Explorations Canvas
-              </h2>
-              <p className="text-xs text-zinc-400 leading-normal">
-                Explorations is a collection of advanced techniques that go
-                beyond standard reports to help you uncover deeper insights
-                about customer behavior.
-              </p>
-              <div className="flex items-center gap-2 text-xxs text-amber-700 bg-amber-50 border border-amber-100 p-2.5 rounded-lg text-left">
-                <ShieldAlert className="h-4.5 w-4.5 text-amber-500 shrink-0" />
+            <div className="rounded-2xl border border-zinc-200 bg-white p-8 text-center space-y-6 max-w-lg mx-auto shadow-sm hover:shadow-md transition-shadow select-none">
+              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-blue-50 border border-blue-150">
+                <Compass className="h-8 w-8 text-blue-600 animate-pulse" />
+              </div>
+              <div className="space-y-2">
+                <div className="inline-flex items-center gap-1.5 rounded-full bg-blue-50/50 border border-blue-200 px-2.5 py-0.5 text-[9px] font-bold text-blue-700 uppercase">
+                  ✨ Under Construction
+                </div>
+                <h2 className="text-base font-bold text-zinc-905">
+                  Explorations Canvas
+                </h2>
+                <p className="text-xs text-zinc-450 leading-relaxed max-w-xs mx-auto">
+                  We are building advanced cohort analysis, user flow tracking, and funnel explorer engines to help you dig deeper into user behaviors.
+                </p>
+              </div>
+              <div className="flex items-center gap-2.5 text-[10px] text-zinc-500 bg-zinc-50 border border-zinc-200/80 p-3.5 rounded-xl text-left">
+                <ShieldAlert className="h-5 w-5 text-amber-500 shrink-0" />
                 <span>
-                  <strong>UI Developer Challenge:</strong> Try creating custom
-                  funnel charts using Recharts under this route to visualize
-                  user conversion dropoffs!
+                  <strong>Tip for Developers:</strong> You can create custom funnel query endpoints in the backend and visualize user dropoffs here using Recharts! Check the documentation for more details.
                 </span>
               </div>
             </div>
           )}
 
           {activeTab === "advertising" && (
-            <div className="rounded-2xl border border-zinc-200 bg-white p-8 text-center space-y-4 max-w-lg mx-auto">
-              <Layers className="h-12 w-12 text-zinc-350 mx-auto" />
-              <h2 className="text-base font-bold text-zinc-800">
-                Advertising &amp; Conversions
-              </h2>
-              <p className="text-xs text-zinc-400 leading-normal">
-                Understand conversion attribution paths, trace which channels
-                drive the most acquisitions, and evaluate marketing ROI.
-              </p>
-              <div className="flex items-center gap-2 text-xxs text-amber-700 bg-amber-50 border border-amber-100 p-2.5 rounded-lg text-left">
-                <ShieldAlert className="h-4.5 w-4.5 text-amber-500 shrink-0" />
+            <div className="rounded-2xl border border-zinc-200 bg-white p-8 text-center space-y-6 max-w-lg mx-auto shadow-sm hover:shadow-md transition-shadow select-none">
+              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-blue-50 border border-blue-150">
+                <Layers className="h-8 w-8 text-blue-600 animate-pulse" />
+              </div>
+              <div className="space-y-2">
+                <div className="inline-flex items-center gap-1.5 rounded-full bg-blue-50/50 border border-blue-200 px-2.5 py-0.5 text-[9px] font-bold text-blue-700 uppercase">
+                  ✨ Still In Development
+                </div>
+                <h2 className="text-base font-bold text-zinc-905">
+                  Advertising &amp; Campaigns
+                </h2>
+                <p className="text-xs text-zinc-450 leading-relaxed max-w-xs mx-auto">
+                  Evaluate traffic attribution, multi-touch campaign performance, and acquisition flows to measure marketing ROI in real time.
+                </p>
+              </div>
+              <div className="flex items-center gap-2.5 text-[10px] text-zinc-500 bg-zinc-50 border border-zinc-200/80 p-3.5 rounded-xl text-left">
+                <ShieldAlert className="h-5 w-5 text-amber-500 shrink-0" />
                 <span>
-                  <strong>UI Developer Challenge:</strong> Build custom
-                  attribution bar graphs and display advertising conversion
-                  flows.
+                  <strong>Tip for Developers:</strong> Map UTM parameters in your SDK integration to trace campaigns. Learn how to bind campaigns in the documentation.
                 </span>
               </div>
             </div>

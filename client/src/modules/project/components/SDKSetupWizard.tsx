@@ -79,11 +79,20 @@ analytics.init();`;
               <span className="text-[10px] text-zinc-400 font-medium">SDK Integration Wizard</span>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-zinc-400 font-medium">Public Key:</span>
-            <code className="rounded bg-zinc-100 px-2 py-0.5 text-zinc-700 font-mono text-[10px] select-all">
-              {project.public_key}
-            </code>
+          <div className="flex items-center gap-5">
+            <a
+              href="/docs"
+              className="text-xs font-semibold text-zinc-500 hover:text-zinc-800 transition-colors select-none cursor-pointer"
+            >
+              Documentation &rarr;
+            </a>
+            <div className="h-4 w-[1px] bg-zinc-200" />
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-zinc-400 font-medium">Public Key:</span>
+              <code className="rounded bg-zinc-100 px-2 py-0.5 text-zinc-700 font-mono text-[10px] select-all">
+                {project.public_key}
+              </code>
+            </div>
           </div>
         </div>
       </header>
