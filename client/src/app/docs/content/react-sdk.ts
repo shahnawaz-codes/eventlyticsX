@@ -131,4 +131,27 @@ const handleCheckout = (cartItems) => {
 // OR: If using Option B (Script Tag)
 // window.Eventlytics.track("purchase-completed", { ... });
 \`\`\`
+
+---
+
+## 4. Single-Page Applications (SPA) Route Tracking
+
+In client-side routers (like React Router, Vue Router, or Next.js transitions), the browser does not perform a full window reload when navigating between pages. To record dynamic virtual page views on route changes, call \`analytics.pageView()\` manually in your router configuration:
+
+\`\`\`typescript
+import { useEffect } from "react";
+import { useLocation } from "react-router-dom";
+import { analytics } from "./analytics";
+
+export function RouteTracker() {
+  const location = useLocation();
+
+  useEffect(() => {
+    // Manually trigger page view tracking on route changes
+    analytics.pageView();
+  }, [location]);
+
+  return null;
+}
+\`\`\`
 `;
