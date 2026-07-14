@@ -40,7 +40,7 @@ For static HTML sites, Webflow, WordPress, or Shopify, you can embed the compile
 ```html
 <script 
   async
-  src="https://cdn.jsdelivr.net/npm/eventlytics-browser@1.0.1/dist/tracker.global.js" 
+  src="https://cdn.jsdelivr.net/npm/eventlytics-browser@1/dist/tracker.global.js" 
   data-project-key="evX_your-public-project-key"
 ></script>
 ```
@@ -170,6 +170,9 @@ Sets up the automatic DOM tracking listeners. Call this once at your application
 * Automatically records a `page-view` event.
 * Starts listening for clicks on elements with `data-track`.
 * Starts tracking page session durations and beacons a `page-exit` event before unload.
+
+### `analytics.pageView()`
+Manually triggers a `page-view` event. This is useful in Single-Page Applications (SPAs) to track dynamic client-side route changes (where full browser reloads do not occur).
 
 ### `analytics.track(eventName, [data])`
 Tracks a custom event manually.
