@@ -12,7 +12,13 @@ The following sequence outlines how the SDK instantiates, generates session meta
 
 ---
 
-## 1. Installation
+## 1. Integration Methods
+
+Choose the setup method that best aligns with your application:
+
+### Option A: NPM Package (For Single-Page Apps, Next.js, React)
+
+#### 1. Installation
 
 Install the package via npm or yarn:
 
@@ -20,9 +26,7 @@ Install the package via npm or yarn:
 npm install eventlytics-browser
 \`\`\`
 
----
-
-## 2. Configuration Setup
+#### 2. Configuration Setup
 
 To avoid multiple instances, create a dedicated configuration file (e.g., \`src/analytics.ts\`) to instantiate the client class:
 
@@ -38,9 +42,7 @@ export const analytics = new Analytics({
 });
 \`\`\`
 
----
-
-## 3. Bind Event Listeners
+#### 3. Bind Event Listeners
 
 Import and initialize the analytics client in your entry file (e.g., \`src/main.tsx\` or \`src/index.tsx\`) before mounting the DOM layout:
 
@@ -62,7 +64,37 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
 
 ---
 
-## 4. Element Auto-Tracking
+### Option B: HTML Script Tag (For Static HTML, WordPress, Webflow, Shopify)
+
+For server-rendered, static HTML pages, or visual builders, embed the compiled tracking script directly in the head of your document.
+
+#### 1. Add Script Tag
+
+Add the script tag to the <head> or bottom of your page:
+
+\`\`\`html
+<script 
+  async
+  src="https://cdn.jsdelivr.net/npm/eventlytics-browser@1.0.1/dist/tracker.global.js" 
+  data-project-key="{{PROJECT_KEY}}"
+  data-endpoint="{{API_ENDPOINT}}"
+></script>
+\`\`\`
+
+#### 2. Attributes Configuration
+- **\`data-project-key\`** (or **\`data-website-id\`**): Your project public key.
+- **\`data-endpoint\`** (optional): The tracking endpoint URL where data is delivered.
+
+#### 3. Accessing the Client Instance
+The script automatically initializes and registers a global client on the \`window\` object. You can dispatch custom events directly from anywhere:
+
+\`\`\`javascript
+window.Eventlytics.track("custom-event-name", { key: "value" });
+\`\`\`
+
+---
+
+## 2. Element Auto-Tracking
 
 Once initialized, the SDK intercepts DOM clicks and checks for elements containing a \`data-track\` attribute:
 
@@ -79,11 +111,12 @@ Simply add the attribute to any HTML element to capture clicks automatically:
 
 ---
 
-## 5. Manual Event Dispatching
+## 3. Manual Event Dispatching
 
 Call \`.track()\` directly on your analytics client to log custom conversions or user actions:
 
 \`\`\`typescript
+// If using Option A (NPM singleton)
 import { analytics } from "../analytics";
 
 const handleCheckout = (cartItems) => {
@@ -94,5 +127,8 @@ const handleCheckout = (cartItems) => {
     currency: "USD"
   });
 };
+
+// OR: If using Option B (Script Tag)
+// window.Eventlytics.track("purchase-completed", { ... });
 \`\`\`
 `;

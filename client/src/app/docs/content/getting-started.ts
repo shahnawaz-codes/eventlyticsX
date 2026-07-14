@@ -14,12 +14,15 @@ To understand how telemetry travels from your browser page to your dashboard, he
 
 ## Integration Paths
 
-eventlyticsX provides a class-based browser library exported as an NPM package. You can instantiate it inside single-page React applications, static templates, or multi-page server architectures:
+eventlyticsX provides multiple integration routes depending on your web stack:
 
-### 1. React Browser SDK
+### 1. React Browser SDK (NPM)
 Install \`eventlytics-browser\` inside modern module bundlers (like React, Vite, Next.js, or Vue) to gain full TypeScript type safety, autocomplete support, and lifecycle hook integration.
 
-### 2. Direct HTTP Ingest
+### 2. CDN Script Tag (HTML)
+For static HTML sites, Webflow, WordPress, or Shopify, include a single async script tag to automatically initialize tracking and auto-capture event telemetry.
+
+### 3. Direct HTTP Ingest
 If you are building custom backend wrappers or dispatching events from server runtimes (like Node.js, Python, or Go), you can send HTTP POST payloads directly to our ingestion gateway.
 
 ---
