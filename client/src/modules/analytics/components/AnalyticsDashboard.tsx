@@ -1,5 +1,6 @@
 "use client";
 
+import React, { useState } from "react";
 import { useAnalyticsDashboard } from "../hooks/useAnalyticsDashboard";
 import { format } from "date-fns";
 import {
@@ -33,9 +34,7 @@ interface AnalyticsData {
   totalEvents: number;
   totalPageviews: number;
   uniqueVisitors: number;
-  // recentEvents: EventItem[];
-  // topPages: { path: string; views: number }[];
-  // topReferrers: { referrer: string; referrals: number }[];
+  averageDuration?: number;
 }
 
 interface Project {
@@ -76,6 +75,7 @@ export default function AnalyticsDashboard({
   isLoading = false,
 }: GoogleAnalyticsDashboardProps) {
   const { activeTab, setActiveTab } = useAnalyticsDashboard();
+  const [expandedEventId, setExpandedEventId] = useState<string | null>(null);
 
   return (
     <div className="flex flex-col min-h-screen bg-[#f8f9fa] text-zinc-800 font-sans">
@@ -189,42 +189,100 @@ export default function AnalyticsDashboard({
                       <tbody className="divide-y divide-zinc-50 font-medium text-zinc-650">
                         {realtime?.recentActivity &&
                         realtime.recentActivity.length > 0 ? (
-                          realtime.recentActivity.map((evt: any) => (
-                            <tr
-                              key={evt.id}
-                              className="hover:bg-zinc-50/50 transition-colors"
-                            >
-                              <td className="py-3 px-3">
-                                <span
-                                  className={`inline-flex px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide border ${
-                                    evt.eventType === "page-view" ||
-                                    evt.eventType === "pageview"
-                                      ? "bg-blue-50 border-blue-100 text-blue-700"
-                                      : evt.eventType === "page-click"
-                                        ? "bg-emerald-50 border-emerald-100 text-emerald-700"
-                                        : "bg-purple-50 border-purple-100 text-purple-700"
+                          realtime.recentActivity.map((evt: any) => {
+                            const isExpanded = expandedEventId === evt.id;
+                            const metaObj = typeof evt.metadata === "string" 
+                              ? (() => { try { return JSON.parse(evt.metadata); } catch { return null; } })() 
+                              : evt.metadata;
+                            const hasMetadata = metaObj && Object.keys(metaObj).length > 0;
+
+                            return (
+                              <React.Fragment key={evt.id}>
+                                <tr
+                                  onClick={() => setExpandedEventId(isExpanded ? null : evt.id)}
+                                  className={`hover:bg-zinc-50/80 transition-colors cursor-pointer select-none ${
+                                    isExpanded ? "bg-zinc-50/50" : ""
                                   }`}
                                 >
-                                  {evt.eventType}
-                                </span>
-                              </td>
-                              <td className="py-3 px-3 font-mono text-zinc-800 text-[11px] truncate max-w-[180px]">
-                                {evt.path}
-                              </td>
-                              <td
-                                className="py-3 px-3 truncate max-w-[140px]"
-                                title={evt.referrer}
-                              >
-                                {evt.referrer || "Direct"}
-                              </td>
-                              <td className="py-3 px-3 font-mono text-zinc-400 text-[10px]">
-                                {evt.sessionId.slice(0, 15)}...
-                              </td>
-                              <td className="py-3 px-3 text-right text-zinc-400 font-mono text-[10px]">
-                                {format(new Date(evt.createdAt), "hh:mm:ss a")}
-                              </td>
-                            </tr>
-                          ))
+                                  <td className="py-3 px-3">
+                                    <span
+                                      className={`inline-flex px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide border ${
+                                        evt.eventType === "page-view" ||
+                                        evt.eventType === "pageview"
+                                          ? "bg-blue-50 border-blue-100 text-blue-700"
+                                          : evt.eventType === "page-click"
+                                            ? "bg-emerald-50 border-emerald-100 text-emerald-700"
+                                            : "bg-purple-50 border-purple-100 text-purple-700"
+                                      }`}
+                                    >
+                                      {evt.eventType}
+                                    </span>
+                                  </td>
+                                  <td className="py-3 px-3 font-mono text-zinc-800 text-[11px] truncate max-w-[180px]">
+                                    {evt.path}
+                                  </td>
+                                  <td
+                                    className="py-3 px-3 truncate max-w-[140px]"
+                                    title={evt.referrer}
+                                  >
+                                    {evt.referrer || "Direct"}
+                                  </td>
+                                  <td className="py-3 px-3 font-mono text-zinc-400 text-[10px]">
+                                    {evt.sessionId.slice(0, 15)}...
+                                  </td>
+                                  <td className="py-3 px-3 text-right text-zinc-400 font-mono text-[10px]">
+                                    {format(new Date(evt.createdAt), "hh:mm:ss a")}
+                                  </td>
+                                </tr>
+                                {isExpanded && (
+                                  <tr className="bg-zinc-50/30">
+                                    <td colSpan={5} className="py-4 px-6 border-b border-zinc-100">
+                                      <div className="space-y-4 text-zinc-650 animate-in fade-in slide-in-from-top-2 duration-200">
+                                        {/* Geo & System Info Grid */}
+                                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-[11px]">
+                                          <div className="flex flex-col gap-1">
+                                            <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider">Location</span>
+                                            <span className="font-semibold text-zinc-800 flex items-center gap-1">
+                                              🌐 {evt.country && evt.country !== "unknown" ? evt.country : "Unknown"}
+                                              {evt.city && evt.city !== "unknown" && `, ${evt.city}`}
+                                            </span>
+                                          </div>
+                                          <div className="flex flex-col gap-1">
+                                            <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider">Browser</span>
+                                            <span className="font-semibold text-zinc-800">
+                                              💻 {evt.browser || "Unknown"}
+                                            </span>
+                                          </div>
+                                          <div className="flex flex-col gap-1">
+                                            <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider">Operating System</span>
+                                            <span className="font-semibold text-zinc-800">
+                                              🖥️ {evt.os || "Unknown"}
+                                            </span>
+                                          </div>
+                                          <div className="flex flex-col gap-1">
+                                            <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider">Device Type</span>
+                                            <span className="font-semibold text-zinc-800 capitalize">
+                                              📱 {evt.device || "desktop"}
+                                            </span>
+                                          </div>
+                                        </div>
+
+                                        {/* Metadata JSON display */}
+                                        {hasMetadata && (
+                                          <div className="space-y-1.5">
+                                            <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider">Custom Event Properties</span>
+                                            <pre className="text-[10px] font-mono bg-zinc-50 border border-zinc-200/80 text-zinc-700 p-3 rounded-lg overflow-x-auto max-h-[200px] scrollbar-thin">
+                                              {JSON.stringify(metaObj, null, 2)}
+                                            </pre>
+                                          </div>
+                                        )}
+                                      </div>
+                                    </td>
+                                  </tr>
+                                )}
+                              </React.Fragment>
+                            );
+                          })
                         ) : (
                           <tr>
                             <td

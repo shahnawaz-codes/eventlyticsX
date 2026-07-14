@@ -15,6 +15,7 @@ model Event {
   utm_campaign String?
   utm_source   String?
   utm_medium   String?
+  duration     Int?
   metadata     Json?    @default("{}")
   createdAt    DateTime @default(now())
 

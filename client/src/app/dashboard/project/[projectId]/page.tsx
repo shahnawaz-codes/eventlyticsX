@@ -131,12 +131,12 @@ export default function ProjectDetailsPage() {
     );
   }
 
-  // Format overview payload to match what GoogleAnalyticsDashboard expects
   const formattedOverview = overview
     ? {
         totalEvents: overview.totalEvents || 0,
         totalPageviews: overview.totalPageviews || 0,
         uniqueVisitors: overview.uniqueVisitors || 0,
+        averageDuration: overview.averageDuration || 0,
       }
     : null;
 

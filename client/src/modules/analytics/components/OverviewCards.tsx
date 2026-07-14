@@ -1,12 +1,13 @@
 "use client";
 
 import React from "react";
-import { Users, Eye, Layers } from "lucide-react";
+import { Users, Eye, Layers, Clock } from "lucide-react";
 
 interface OverviewData {
   totalEvents: number;
   totalPageviews: number;
   uniqueVisitors: number;
+  averageDuration?: number;
 }
 
 interface OverviewCardsProps {
@@ -14,11 +15,19 @@ interface OverviewCardsProps {
   isLoading?: boolean;
 }
 
+const formatDuration = (seconds?: number) => {
+  if (seconds === undefined || seconds === null) return "0s";
+  if (seconds < 60) return `${seconds}s`;
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return secs > 0 ? `${mins}m ${secs}s` : `${mins}m`;
+};
+
 export default function OverviewCards({ overview, isLoading = false }: OverviewCardsProps) {
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-in fade-in duration-300">
-        {[1, 2, 3].map((i) => (
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 animate-in fade-in duration-300">
+        {[1, 2, 3, 4].map((i) => (
           <div
             key={i}
             className="h-[120px] rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm flex flex-col justify-between"
@@ -40,7 +49,7 @@ export default function OverviewCards({ overview, isLoading = false }: OverviewC
   const cards = [
     {
       title: "Unique Visitors",
-      value: overview?.uniqueVisitors ?? 0,
+      value: (overview?.uniqueVisitors ?? 0).toLocaleString(),
       description: "Distinct user sessions active in timeframe",
       icon: Users,
       colorClass: "text-indigo-600 bg-indigo-50 border-indigo-100",
@@ -48,15 +57,23 @@ export default function OverviewCards({ overview, isLoading = false }: OverviewC
     },
     {
       title: "Total Pageviews",
-      value: overview?.totalPageviews ?? 0,
+      value: (overview?.totalPageviews ?? 0).toLocaleString(),
       description: "Raw page navigation logs captured",
       icon: Eye,
       colorClass: "text-emerald-600 bg-emerald-50 border-emerald-100",
       gradient: "from-emerald-500/5 to-transparent",
     },
     {
+      title: "Avg. Session Duration",
+      value: formatDuration(overview?.averageDuration),
+      description: "Average time spent per session",
+      icon: Clock,
+      colorClass: "text-rose-600 bg-rose-50 border-rose-100",
+      gradient: "from-rose-500/5 to-transparent",
+    },
+    {
       title: "Total Events",
-      value: overview?.totalEvents ?? 0,
+      value: (overview?.totalEvents ?? 0).toLocaleString(),
       description: "Actions, interactions, and logs executed",
       icon: Layers,
       colorClass: "text-amber-600 bg-amber-50 border-amber-100",
@@ -65,7 +82,7 @@ export default function OverviewCards({ overview, isLoading = false }: OverviewC
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-in fade-in duration-300">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 animate-in fade-in duration-300">
       {cards.map((card, idx) => {
         const Icon = card.icon;
         return (
@@ -92,7 +109,7 @@ export default function OverviewCards({ overview, isLoading = false }: OverviewC
 
               <div>
                 <div className="text-3xl font-extrabold text-zinc-900 tracking-tight flex items-baseline gap-1.5">
-                  {card.value.toLocaleString()}
+                  {card.value}
                 </div>
                 <p className="text-[10px] text-zinc-450 mt-1 font-medium leading-normal">
                   {card.description}
@@ -105,3 +122,4 @@ export default function OverviewCards({ overview, isLoading = false }: OverviewC
     </div>
   );
 }
+
