@@ -19,6 +19,8 @@ It automatically captures page views, clicks, and page exit durations, and suppo
 
 ## Installation
 
+### Option A: NPM or Yarn
+
 Install via npm:
 
 ```bash
@@ -29,6 +31,28 @@ Or via yarn:
 
 ```bash
 yarn add eventlytics-browser
+```
+
+### Option B: HTML Script Tag (CDN)
+
+For static HTML sites, Webflow, WordPress, or Shopify, you can embed the compiled tracker script directly via a CDN (like jsDelivr):
+
+```html
+<script 
+  async
+  src="https://cdn.jsdelivr.net/npm/eventlytics-browser@1.0.1/dist/tracker.global.js" 
+  data-project-key="evX_your-public-project-key"
+></script>
+```
+
+#### Configuration via Data Attributes:
+* `data-project-key` (or `data-website-id`): Your public project key.
+* `data-endpoint` (optional): A custom backend URL where tracking requests are sent.
+
+When using this method, the SDK automatically initializes itself and exposes the instance on `window.Eventlytics`. You can manually dispatch custom events anywhere in your code:
+
+```javascript
+window.Eventlytics.track("custom-event-name", { key: "value" });
 ```
 
 ---
