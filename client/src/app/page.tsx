@@ -1034,18 +1034,17 @@ analytics.init()`;
                       {"\n  "}
                       <span className="text-emerald-400">async</span>
                       {"\n  "}
-                      <span className="text-emerald-400">defer</span>
-                      {"\n  "}
-                      <span className="text-violet-400">data-website-id</span>
+                    
+                      <span className="text-violet-400">data-project-key</span>
                       <span className="text-zinc-500">=</span>
                       <span className="text-amber-300">
-                        &quot;evt_8f2a74c9&quot;
+                        &quot;YOUR_PROJECT_KEY&quot;
                       </span>
                       {"\n  "}
                       <span className="text-violet-400">src</span>
                       <span className="text-zinc-500">=</span>
                       <span className="text-amber-300">
-                        &quot;https://cdn.eventlyticsx.com/tracker.js&quot;
+                        &quot;https://cdn.jsdelivr.net/npm/eventlytics-browser@1/dist/tracker.global.js&quot;
                       </span>
                       {"\n"}
                       <span className="text-zinc-500">&gt;&lt;/</span>
