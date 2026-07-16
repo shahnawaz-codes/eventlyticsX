@@ -15,12 +15,61 @@ interface OverviewCardsProps {
   isLoading?: boolean;
 }
 
-const formatDuration = (seconds?: number) => {
-  if (seconds === undefined || seconds === null) return "0s";
-  if (seconds < 60) return `${seconds}s`;
+const formatDuration = (seconds?: number): React.ReactNode => {
+  if (seconds === undefined || seconds === null || isNaN(seconds)) {
+    return (
+      <span>
+        0<span className="text-sm font-semibold text-zinc-400 ml-0.5 lowercase">s</span>
+      </span>
+    );
+  }
+
+  if (seconds < 60) {
+    return (
+      <span>
+        {seconds}
+        <span className="text-sm font-semibold text-zinc-400 ml-0.5 lowercase">s</span>
+      </span>
+    );
+  }
+
   const mins = Math.floor(seconds / 60);
-  const secs = seconds % 60;
-  return secs > 0 ? `${mins}m ${secs}s` : `${mins}m`;
+  const secs = Math.round(seconds % 60);
+
+  if (mins < 60) {
+    return (
+      <span className="flex items-baseline gap-1.5">
+        <span>
+          {mins}
+          <span className="text-sm font-semibold text-zinc-400 ml-0.5 lowercase">m</span>
+        </span>
+        {secs > 0 && (
+          <span>
+            {secs}
+            <span className="text-sm font-semibold text-zinc-400 ml-0.5 lowercase">s</span>
+          </span>
+        )}
+      </span>
+    );
+  }
+
+  const hours = Math.floor(mins / 60);
+  const remainingMins = mins % 60;
+
+  return (
+    <span className="flex items-baseline gap-1.5">
+      <span>
+        {hours}
+        <span className="text-sm font-semibold text-zinc-400 ml-0.5 lowercase">h</span>
+      </span>
+      {remainingMins > 0 && (
+        <span>
+          {remainingMins}
+          <span className="text-sm font-semibold text-zinc-400 ml-0.5 lowercase">m</span>
+        </span>
+      )}
+    </span>
+  );
 };
 
 export default function OverviewCards({ overview, isLoading = false }: OverviewCardsProps) {
