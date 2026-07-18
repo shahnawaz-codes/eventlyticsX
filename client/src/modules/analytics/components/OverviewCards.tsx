@@ -32,7 +32,7 @@ const formatDuration = (seconds?: number): React.ReactNode => {
       </span>
     );
   }
-
+//min 
   const mins = Math.floor(seconds / 60);
   const secs = Math.round(seconds % 60);
 
